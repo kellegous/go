@@ -52,6 +52,17 @@ func parseName(base, path string) string {
 	return t[:ix]
 }
 
+type routeWithName struct {
+	Name string `json:"name"`
+	*context.Route
+}
+
+type msg struct {
+	Ok    bool           `json:"ok"`
+	Error string         `json:"error,omitempty"`
+	Route *routeWithName `json:"route,omitempty"`
+}
+
 func writeJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	w.WriteHeader(status)
@@ -60,28 +71,32 @@ func writeJSON(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
-func writeJSONError(w http.ResponseWriter, error string, status int) {
-	writeJSON(w, map[string]interface{}{
-		"error": error,
-	}, status)
-}
-
-func writeJSONNotFound(w http.ResponseWriter) {
-	writeJSON(w, nil, http.StatusNotFound)
-}
-
 func writeJSONRoute(w http.ResponseWriter, name string, rt *context.Route) {
-	res := struct {
-		Name string    `json:"name"`
-		URL  string    `json:"url"`
-		Time time.Time `json:"time"`
-	}{
-		name,
-		rt.URL,
-		rt.Time,
-	}
+	writeJSON(w, &msg{
+		Ok: true,
+		Route: &routeWithName{
+			Name:  name,
+			Route: rt,
+		},
+	}, http.StatusOK)
+}
 
-	writeJSON(w, &res, http.StatusOK)
+func writeJSONOk(w http.ResponseWriter) {
+	writeJSON(w, &msg{
+		Ok: true,
+	}, http.StatusOK)
+}
+
+func writeJSONError(w http.ResponseWriter, err string) {
+	writeJSON(w, &msg{
+		Ok:    false,
+		Error: err,
+	}, http.StatusOK)
+}
+
+func writeJSONBackendError(w http.ResponseWriter, err error) {
+	log.Printf("[error] %s", err)
+	writeJSONError(w, "backend error")
 }
 
 func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
@@ -126,25 +141,27 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSONError(w, "invalid json", http.StatusBadRequest)
+		writeJSONError(w, "invalid json")
 		return
 	}
 
 	// Handle delete requests
 	if req.URL == "" {
 		if p == "" {
-			writeJSONError(w, "url required", http.StatusBadRequest)
+			writeJSONError(w, "url required")
 			return
 		}
 
 		if err := ctx.Del(p); err != nil {
-			log.Panic(err)
+			writeJSONBackendError(w, err)
+			return
 		}
+
 		return
 	}
 
 	if !validURL(req.URL) {
-		writeJSONError(w, "invalid URL", http.StatusBadRequest)
+		writeJSONError(w, "invalid URL")
 		return
 	}
 
@@ -152,7 +169,8 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	if p == "" {
 		id, err := ctx.NextID()
 		if err != nil {
-			log.Panic(err)
+			writeJSONBackendError(w, err)
+			return
 		}
 		p = encodeID(id)
 	}
@@ -163,7 +181,8 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctx.Put(p, &rt); err != nil {
-		log.Panic(err)
+		writeJSONBackendError(w, err)
+		return
 	}
 
 	writeJSONRoute(w, p, &rt)
@@ -173,16 +192,17 @@ func apiGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
-		writeJSONNotFound(w)
+		writeJSON(w, nil, http.StatusNotFound)
 		return
 	}
 
 	rt, err := ctx.Get(p)
 	if err == leveldb.ErrNotFound {
-		writeJSONNotFound(w)
+		writeJSON(w, nil, http.StatusNotFound)
 		return
 	} else if err != nil {
-		log.Panic(err)
+		writeJSONBackendError(w, err)
+		return
 	}
 
 	writeJSONRoute(w, p, rt)
@@ -195,9 +215,7 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		apiGet(h.ctx, w, r)
 	default:
-		writeJSONError(w,
-			http.StatusText(http.StatusMethodNotAllowed),
-			http.StatusMethodNotAllowed)
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed))
 	}
 }
 

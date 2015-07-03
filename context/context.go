@@ -21,8 +21,8 @@ const (
 
 // Route ...
 type Route struct {
-	URL  string
-	Time time.Time
+	URL  string    `json:"url"`
+	Time time.Time `json:"time"`
 }
 
 //

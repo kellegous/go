@@ -16,9 +16,14 @@ var load = function() {
     url: '/api/url/' + name,
     dataType: 'json'
   }).always(function(data) {
-    var url = data.url || '';
-    $('#url').val(url)
-      .focus();
+    if (!data.ok) {
+      // TODO(knorton): Error
+      return;
+    }
+
+    var route = data.route,
+        url = route.url || '';
+    $('#url').val(url).focus();
   });
 }
 
@@ -41,22 +46,33 @@ var form = $('form').on('submit', function(e) {
   var name = nameFrom(location.pathname),
       url = $('#url').val().trim();
 
-  if (!url) {
-    return;
-  }
-
   $.ajax({
     type: 'POST',
     url : '/api/url/' + name,
     data : JSON.stringify({ url : url }),
     dataType : 'json'
-  }).success(function(data) {
-    var url = data.url || '';
+  }).always(function(data, txt, xhr) {
+    if (!data.ok) {
+      return;
+    }
+
+    var route = data.route;
+    if (!route) {
+      // deleted
+    }
+
+    var url = route.url || '',
+        name = route.name || '';
     if (url) {
-      history.replaceState({}, null, '/edit/' + data.name);
-      showLink(data.name);
+      history.replaceState({}, null, '/edit/' + name);
+      showLink(name);
     }
   });
+});
+
+$('#cls').on('click', function(e) {
+  $('#url').val('');
+  $('form').submit();
 });
 
 window.addEventListener('resize', resize);
