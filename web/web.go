@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -35,6 +36,13 @@ func encodeID(id uint64) string {
 	return string(b)
 }
 
+func cleanName(name string) string {
+	for strings.HasPrefix(name, prefix) {
+		name = name[1:]
+	}
+	return name
+}
+
 func parseName(base, path string) string {
 	t := path[len(base):]
 	ix := strings.Index(t, "/")
@@ -46,6 +54,7 @@ func parseName(base, path string) string {
 
 func writeJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
+	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		log.Panic(err)
 	}
@@ -55,6 +64,10 @@ func writeJSONError(w http.ResponseWriter, error string, status int) {
 	writeJSON(w, map[string]interface{}{
 		"error": error,
 	}, status)
+}
+
+func writeJSONNotFound(w http.ResponseWriter) {
+	writeJSON(w, nil, http.StatusNotFound)
 }
 
 func writeJSONRoute(w http.ResponseWriter, name string, rt *context.Route) {
@@ -91,6 +104,20 @@ type apiHandler struct {
 	ctx *context.Context
 }
 
+func validURL(s string) bool {
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+
+	switch u.Scheme {
+	case "http", "https", "mailto", "ftp":
+		return true
+	}
+
+	return false
+}
+
 func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
@@ -103,6 +130,7 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Handle delete requests
 	if req.URL == "" {
 		if p == "" {
 			writeJSONError(w, "url required", http.StatusBadRequest)
@@ -115,6 +143,12 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !validURL(req.URL) {
+		writeJSONError(w, "invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	// If no name is specified, an ID must be generate.
 	if p == "" {
 		id, err := ctx.NextID()
 		if err != nil {
@@ -137,13 +171,15 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 func apiGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
+
 	if p == "" {
-		writeJSONError(w, "no such route", http.StatusNotFound)
+		writeJSONNotFound(w)
+		return
 	}
 
 	rt, err := ctx.Get(p)
 	if err == leveldb.ErrNotFound {
-		writeJSONError(w, "no such route", http.StatusNotFound)
+		writeJSONNotFound(w)
 		return
 	} else if err != nil {
 		log.Panic(err)
@@ -176,12 +212,10 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(knorton): remove the special prefix
-
 	rt, err := h.ctx.Get(p)
 	if err == leveldb.ErrNotFound {
 		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", p),
+			fmt.Sprintf("/edit/%s", cleanName(p)),
 			http.StatusTemporaryRedirect)
 		return
 	} else if err != nil {

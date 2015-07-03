@@ -15,9 +15,10 @@ var load = function() {
   $.ajax({
     url: '/api/url/' + name,
     dataType: 'json'
-  }).success(function(data) {
+  }).always(function(data) {
     var url = data.url || '';
-    $('#url').val(url);
+    $('#url').val(url)
+      .focus();
   });
 }
 
