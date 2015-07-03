@@ -7,114 +7,16 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
+
+	"github.com/kellegous/go/context"
 )
-
-const (
-	dbFilename = "keys.db"
-)
-
-type Route struct {
-	Url  string
-	Time time.Time
-}
-
-func (r *Route) Write(w io.Writer) error {
-	if err := binary.Write(w, binary.LittleEndian, r.Time.UnixNano()); err != nil {
-		return err
-	}
-
-	if _, err := w.Write([]byte(r.Url)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (o *Route) Read(r io.Reader) error {
-	var t int64
-	if err := binary.Read(r, binary.LittleEndian, &t); err != nil {
-		return err
-	}
-
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-
-	o.Url = string(b)
-	o.Time = time.Unix(0, t)
-	return nil
-}
-
-type Context struct {
-	path string
-}
-
-func (c *Context) Init() error {
-	if _, err := os.Stat(c.path); err != nil {
-		if err := os.MkdirAll(c.path, os.ModePerm); err != nil {
-			return err
-		}
-	}
-
-	db, err := openDb(c.path)
-	if err != nil {
-		return err
-	}
-
-	return db.Close()
-}
-
-func openDb(path string) (*leveldb.DB, error) {
-	return leveldb.OpenFile(filepath.Join(path, dbFilename), nil)
-}
-
-func (c *Context) Get(key string) (*Route, error) {
-	db, err := openDb(c.path)
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
-
-	val, err := db.Get([]byte(key), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	r := &Route{}
-	if err := r.Read(bytes.NewBuffer(val)); err != nil {
-		return nil, err
-	}
-
-	return r, nil
-}
-
-func (c *Context) Put(key string, r *Route) error {
-	db, err := openDb(c.path)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	var buf bytes.Buffer
-
-	if err := r.Write(&buf); err != nil {
-		return err
-	}
-
-	return db.Put([]byte(key), buf.Bytes(), nil)
-}
 
 func MakeName() string {
 	var buf bytes.Buffer
@@ -145,14 +47,14 @@ func WriteJsonError(w http.ResponseWriter, error string, status int) {
 	}, status)
 }
 
-func WriteJsonRoute(w http.ResponseWriter, name string, rt *Route) {
+func WriteJsonRoute(w http.ResponseWriter, name string, rt *context.Route) {
 	res := struct {
 		Name string    `json:"name"`
 		URL  string    `json:"url"`
 		Time time.Time `json:"time"`
 	}{
 		name,
-		rt.Url,
+		rt.URL,
 		rt.Time,
 	}
 
@@ -176,7 +78,7 @@ func ServeAsset(w http.ResponseWriter, r *http.Request, name string) {
 }
 
 type DefaultHandler struct {
-	ctx *Context
+	ctx *context.Context
 }
 
 func (h *DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -200,12 +102,12 @@ func (h *DefaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r,
-		rt.Url,
+		rt.URL,
 		http.StatusTemporaryRedirect)
 }
 
 type EditHandler struct {
-	ctx *Context
+	ctx *context.Context
 }
 
 func (h *EditHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +124,7 @@ func (h *EditHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type ApiHandler struct {
-	ctx *Context
+	ctx *context.Context
 }
 
 func (h *ApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -249,8 +151,8 @@ func (h *ApiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		rt := Route{
-			Url:  req.URL,
+		rt := context.Route{
+			URL:  req.URL,
 			Time: time.Now(),
 		}
 
@@ -281,11 +183,8 @@ func main() {
 	flagAddr := flag.String("addr", ":8067", "addr")
 	flag.Parse()
 
-	ctx := &Context{
-		path: *flagData,
-	}
-
-	if err := ctx.Init(); err != nil {
+	ctx, err := context.Open(*flagData)
+	if err != nil {
 		log.Panic(err)
 	}
 
