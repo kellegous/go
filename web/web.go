@@ -13,7 +13,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-const alpha = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const (
+	alpha  = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	prefix = ":"
+)
 
 func encodeID(id uint64) string {
 	n := uint64(len(alpha))
@@ -88,51 +91,74 @@ type apiHandler struct {
 	ctx *context.Context
 }
 
-func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
-	if p == "" {
-		writeJSONError(w,
-			http.StatusText(http.StatusNotFound),
-			http.StatusNotFound)
+
+	var req struct {
+		URL string `json:"url"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONError(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 
-	if r.Method == "POST" {
-		var req struct {
-			URL string `json:"url"`
-		}
-
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSONError(w, "invalid json", http.StatusBadRequest)
-			return
-		}
-
-		if req.URL == "" {
+	if req.URL == "" {
+		if p == "" {
 			writeJSONError(w, "url required", http.StatusBadRequest)
 			return
 		}
 
-		rt := context.Route{
-			URL:  req.URL,
-			Time: time.Now(),
-		}
-
-		if err := h.ctx.Put(p, &rt); err != nil {
+		if err := ctx.Del(p); err != nil {
 			log.Panic(err)
 		}
+		return
+	}
 
-		writeJSONRoute(w, p, &rt)
-	} else if r.Method == "GET" {
-		rt, err := h.ctx.Get(p)
-		if err == leveldb.ErrNotFound {
-			writeJSONError(w, "no such route", http.StatusNotFound)
-			return
-		} else if err != nil {
+	if p == "" {
+		id, err := ctx.NextID()
+		if err != nil {
 			log.Panic(err)
 		}
+		p = encodeID(id)
+	}
 
-		writeJSONRoute(w, p, rt)
-	} else {
+	rt := context.Route{
+		URL:  req.URL,
+		Time: time.Now(),
+	}
+
+	if err := ctx.Put(p, &rt); err != nil {
+		log.Panic(err)
+	}
+
+	writeJSONRoute(w, p, &rt)
+}
+
+func apiGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	p := parseName("/api/url/", r.URL.Path)
+	if p == "" {
+		writeJSONError(w, "no such route", http.StatusNotFound)
+	}
+
+	rt, err := ctx.Get(p)
+	if err == leveldb.ErrNotFound {
+		writeJSONError(w, "no such route", http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Panic(err)
+	}
+
+	writeJSONRoute(w, p, rt)
+}
+
+func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "POST":
+		apiPost(h.ctx, w, r)
+	case "GET":
+		apiGet(h.ctx, w, r)
+	default:
 		writeJSONError(w,
 			http.StatusText(http.StatusMethodNotAllowed),
 			http.StatusMethodNotAllowed)
@@ -145,18 +171,12 @@ type defaultHandler struct {
 
 func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := parseName("/", r.URL.Path)
-
 	if p == "" {
-		id, err := h.ctx.NextID()
-		if err != nil {
-			log.Panic(err)
-		}
-
-		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", encodeID(id)),
-			http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
 	}
+
+	// TODO(knorton): remove the special prefix
 
 	rt, err := h.ctx.Get(p)
 	if err == leveldb.ErrNotFound {
@@ -178,20 +198,6 @@ type editHandler struct {
 }
 
 func (h *editHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p := parseName("/edit/", r.URL.Path)
-
-	if p == "" {
-		id, err := h.ctx.NextID()
-		if err != nil {
-			log.Panic(err)
-		}
-
-		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", encodeID(id)),
-			http.StatusTemporaryRedirect)
-		return
-	}
-
 	serveAsset(w, r, "index.html")
 }
 

@@ -52,7 +52,8 @@ var form = $('form').on('submit', function(e) {
   }).success(function(data) {
     var url = data.url || '';
     if (url) {
-      showLink(name);
+      history.replaceState({}, null, '/edit/' + data.name);
+      showLink(data.name);
     }
   });
 });

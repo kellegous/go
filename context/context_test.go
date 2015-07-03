@@ -62,7 +62,7 @@ func TestNextID(t *testing.T) {
 	}
 
 	var e uint64 = 1
-	for i, n := 0, 2*int(idBatchSize)+5; i < n; i++ {
+	for i := 0; i < 501; i++ {
 		r, err := ctx.NextID()
 		if err != nil {
 			t.Fatal(err)
