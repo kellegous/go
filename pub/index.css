@@ -9,12 +9,17 @@ form {
   text-align: center;
 }
 
+#bar {
+  width: 652px;
+  margin: 0 auto;
+  position: relative;
+}
+
 #url {
   font-family: 'Raleway', sans-serif;
   font-size: 32px;
   font-weight: 300;
   width: 600px;
-  margin: 0 auto;
   padding: 25px;
   color: #999;
   border-radius: 4px;
@@ -53,4 +58,22 @@ form {
 #cmp > a {
   color: #09f;
   text-decoration: none;
+}
+
+#cls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 64px;
+  background-image: url("/s/close.svg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 48px 48px;
+  cursor: pointer;
+  opacity: 0.3;
+}
+
+#cls:hover {
+  opacity: 0.6;
 }
