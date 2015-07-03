@@ -5,7 +5,7 @@
 // pub/index.js
 // DO NOT EDIT!
 
-package main
+package web
 
 import (
 	"bytes"
