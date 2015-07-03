@@ -2,12 +2,9 @@ package web
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -16,10 +13,23 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-func makeName() string {
-	var buf bytes.Buffer
-	binary.Write(&buf, binary.LittleEndian, rand.Int63())
-	return base64.URLEncoding.EncodeToString(buf.Bytes())
+const alpha = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func encodeID(id uint64) string {
+	n := uint64(len(alpha))
+	b := make([]byte, 0, 8)
+	if id == 0 {
+		return "0"
+	}
+
+	b = append(b, ':')
+
+	for id > 0 {
+		b = append(b, alpha[id%n])
+		id /= n
+	}
+
+	return string(b)
 }
 
 func parseName(base, path string) string {
@@ -137,8 +147,13 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := parseName("/", r.URL.Path)
 
 	if p == "" {
+		id, err := h.ctx.NextID()
+		if err != nil {
+			log.Panic(err)
+		}
+
 		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", makeName()),
+			fmt.Sprintf("/edit/%s", encodeID(id)),
 			http.StatusTemporaryRedirect)
 		return
 	}
@@ -166,8 +181,13 @@ func (h *editHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := parseName("/edit/", r.URL.Path)
 
 	if p == "" {
+		id, err := h.ctx.NextID()
+		if err != nil {
+			log.Panic(err)
+		}
+
 		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", makeName()),
+			fmt.Sprintf("/edit/%s", encodeID(id)),
 			http.StatusTemporaryRedirect)
 		return
 	}

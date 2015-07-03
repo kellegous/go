@@ -64,6 +64,39 @@ type Context struct {
 	id   uint64
 }
 
+func commit(filename string, id uint64) error {
+	w, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
+		return err
+	}
+
+	return w.Sync()
+}
+
+func load(filename string) (uint64, error) {
+	if _, err := os.Stat(filename); err != nil {
+		return 0, commit(filename, idBatchSize)
+	}
+
+	r, err := os.Open(filename)
+	if err != nil {
+		return 0, err
+	}
+	defer r.Close()
+
+	var id uint64
+	if err := binary.Read(r, binary.LittleEndian, &id); err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
 // Open ...
 func Open(path string) (*Context, error) {
 	if _, err := os.Stat(path); err != nil {
@@ -78,19 +111,16 @@ func Open(path string) (*Context, error) {
 		return nil, err
 	}
 
-	c := &Context{
+	id, err := load(filepath.Join(path, idLogFilename))
+	if err != nil {
+		return nil, err
+	}
+
+	return &Context{
 		path: path,
 		db:   db,
-	}
-
-	// make sure we have an id log file
-	if _, err := os.Stat(filepath.Join(path, idLogFilename)); err != nil {
-		if err := c.commit(idBatchSize); err != nil {
-			return nil, err
-		}
-	}
-
-	return c, nil
+		id:   id,
+	}, nil
 }
 
 // Get ...
@@ -141,7 +171,7 @@ func (c *Context) NextID() (uint64, error) {
 	// boundary. If we crash, we'll just throw away a batch of ids in the worst
 	// case.
 	if c.id%idBatchSize == 0 {
-		if err := c.commit(c.id + idBatchSize); err != nil {
+		if err := commit(filepath.Join(c.path, idLogFilename), c.id+idBatchSize); err != nil {
 			return 0, err
 		}
 	}
