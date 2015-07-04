@@ -72,6 +72,7 @@ form {
   background-size: 48px 48px;
   cursor: pointer;
   opacity: 0.3;
+  display: none;
 }
 
 #cls:hover {

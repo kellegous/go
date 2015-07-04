@@ -1,8 +1,14 @@
 (function() {
 
+var $frm = $('form'),
+    $cmp = $('#cmp'),
+    $cls = $('#cls'),
+    $url = $('#url'),
+    lastUrl;
+
 var resize = function() {
-  var rect = form.get(0).getBoundingClientRect();
-  form.css('margin-top', window.innerHeight/3 - rect.height/2);
+  var rect = $frm.get(0).getBoundingClientRect();
+  $frm.css('margin-top', window.innerHeight/3 - rect.height/2);
 };
 
 var nameFrom = function(uri) {
@@ -22,43 +28,66 @@ var load = function() {
     }
 
     var route = data.route,
-        url = route.url || '';
-    $('#url').val(url).focus();
+        url = route && route.url || '';
+    $url.val(url).focus();
+    urlDidChange();
   });
 }
 
 var showLink = function(name) {
-  var cmp = $('#cmp'),
-      lnk = location.origin + '/' + name;
+  var lnk = location.origin + '/' + name;
+
+  $cmp.find('a').remove();
 
   var a = $(document.createElement('a'))
     .attr('href', lnk)
     .text(lnk)
-    .appendTo(cmp.text(''));
+    .appendTo($cmp.text(''));
 
-  cmp.css('transform', 'scaleY(1)');
+  $cmp.css('transform', 'scaleY(1)');
 
   getSelection().setBaseAndExtent(a.get(0), 0, a.get(0), 1);
 };
 
-var form = $('form').on('submit', function(e) {
+var hideLink = function() {
+  $cmp.css('transform', 'scaleY(0)');
+};
+
+var urlDidChange = function() {
+  var url = $url.val().trim();
+  if (url == lastUrl) {
+    return;
+  }
+
+  lastUrl = url;
+
+  if (url) {
+    $cls.fadeIn(200);
+  } else {
+    $cls.fadeOut(200);
+  }
+};
+
+$frm.on('submit', function(e) {
   e.preventDefault();
   var name = nameFrom(location.pathname),
-      url = $('#url').val().trim();
+      url = $url.val().trim();
 
   $.ajax({
     type: 'POST',
     url : '/api/url/' + name,
     data : JSON.stringify({ url : url }),
     dataType : 'json'
-  }).always(function(data, txt, xhr) {
+  }).always(function(data) {
     if (!data.ok) {
+      hideLink();
       return;
     }
 
     var route = data.route;
     if (!route) {
-      // deleted
+      hideLink();
+      return;
     }
 
     var url = route.url || '',
@@ -70,13 +99,19 @@ var form = $('form').on('submit', function(e) {
   });
 });
 
-$('#cls').on('click', function(e) {
-  $('#url').val('');
-  $('form').submit();
+$url.on('keydown', urlDidChange)
+    .on('paste', urlDidChange)
+    .on('change', urlDidChange);
+
+$cls.on('click', function(e) {
+  $url.val('');
+  $frm.submit();
+  urlDidChange();
 });
 
 window.addEventListener('resize', resize);
 resize();
+urlDidChange();
 load();
 
 })();

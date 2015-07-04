@@ -157,6 +157,7 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		writeJSONOk(w)
 		return
 	}
 
@@ -192,13 +193,13 @@ func apiGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
-		writeJSON(w, nil, http.StatusNotFound)
+		writeJSONOk(w)
 		return
 	}
 
 	rt, err := ctx.Get(p)
 	if err == leveldb.ErrNotFound {
-		writeJSON(w, nil, http.StatusNotFound)
+		writeJSONOk(w)
 		return
 	} else if err != nil {
 		writeJSONBackendError(w, err)
