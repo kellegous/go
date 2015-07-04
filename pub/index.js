@@ -4,7 +4,12 @@ var $frm = $('form'),
     $cmp = $('#cmp'),
     $cls = $('#cls'),
     $url = $('#url'),
+    copyKey = navigator.userAgent.indexOf('Macintosh') >= 0 ? '⌘-C' : 'Ctrl-C',
     lastUrl;
+
+var $e = function(name) {
+  return $(document.createElement(name));
+};
 
 var resize = function() {
   var rect = $frm.get(0).getBoundingClientRect();
@@ -23,7 +28,7 @@ var load = function() {
     dataType: 'json'
   }).always(function(data) {
     if (!data.ok) {
-      // TODO(knorton): Error
+      showError(data.error);
       return;
     }
 
@@ -37,19 +42,37 @@ var load = function() {
 var showLink = function(name) {
   var lnk = location.origin + '/' + name;
 
-  $cmp.find('a').remove();
+  $cmp.text('')
+    .removeClass('fuck')
+    .addClass('link');
 
   var a = $(document.createElement('a'))
     .attr('href', lnk)
     .text(lnk)
-    .appendTo($cmp.text(''));
+    .appendTo($cmp);
+
+  var h = $(document.createElement('span'))
+    .addClass('hnt')
+    .text(copyKey)
+    .appendTo($cmp);
 
   $cmp.css('transform', 'scaleY(1)');
 
   getSelection().setBaseAndExtent(a.get(0), 0, a.get(0), 1);
 };
 
-var hideLink = function() {
+var showError = function(message) {
+  $cmp.text('')
+    .removeClass('link')
+    .addClass('fuck');
+
+  $e('span').text('ERROR: ' + message)
+    .appendTo($cmp);
+
+  $cmp.css('transform', 'scaleY(1)');
+};
+
+var hideDrawer = function() {
   $cmp.css('transform', 'scaleY(0)');
 };
 
@@ -61,6 +84,7 @@ var urlDidChange = function() {
 
   lastUrl = url;
 
+  hideDrawer();
   if (url) {
     $cls.fadeIn(200);
   } else {
@@ -80,13 +104,13 @@ $frm.on('submit', function(e) {
     dataType : 'json'
   }).always(function(data) {
     if (!data.ok) {
-      hideLink();
+      showError(data.error);
       return;
     }
 
     var route = data.route;
     if (!route) {
-      hideLink();
+      hideDrawer();
       return;
     }
 

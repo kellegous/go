@@ -41,7 +41,6 @@ form {
 }
 
 #cmp {
-  background-color: #eee;
   padding: 25px;
   width: 560px;
   margin: 0 auto;
@@ -55,9 +54,24 @@ form {
   border: 1px solid #ccc;
 }
 
+#cmp.link {
+  background-color: #f6f6f6;
+}
+
+#cmp.fuck {
+  background-color: #fee;
+  color: #999;
+}
+
 #cmp > a {
   color: #09f;
   text-decoration: none;
+}
+
+#cmp > .hnt {
+  float: right;
+  color: #ddd;
+  text-shadow: 1px 1px 0 #fff;
 }
 
 #cls {
