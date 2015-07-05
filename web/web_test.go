@@ -75,7 +75,7 @@ func newEnv() (*env, error) {
 	}
 
 	return &env{
-		mux: allRoutes(ctx),
+		mux: allRoutes(ctx, ""),
 		dir: dir,
 		ctx: ctx,
 	}, nil

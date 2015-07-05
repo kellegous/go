@@ -8,6 +8,15 @@ import (
 	"github.com/kellegous/go/web"
 )
 
+var version string
+
+func getVersion() string {
+	if version == "" {
+		return "none"
+	}
+	return version
+}
+
 func main() {
 	flagData := flag.String("data", "data",
 		"The location to use for the data store")
@@ -20,5 +29,5 @@ func main() {
 		log.Panic(err)
 	}
 
-	log.Panic(web.ListenAndServe(*flagAddr, ctx))
+	log.Panic(web.ListenAndServe(*flagAddr, getVersion(), ctx))
 }

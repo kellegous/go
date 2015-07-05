@@ -279,7 +279,7 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Setup a Mux with all web routes.
-func allRoutes(ctx *context.Context) *http.ServeMux {
+func allRoutes(ctx *context.Context, version string) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/", &defaultHandler{ctx})
 	mux.Handle("/api/url/", &apiHandler{ctx})
@@ -289,11 +289,14 @@ func allRoutes(ctx *context.Context) *http.ServeMux {
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
 	})
+	mux.HandleFunc("/:version", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, version)
+	})
 	return mux
 }
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
-func ListenAndServe(addr string, ctx *context.Context) error {
-	return http.ListenAndServe(addr, allRoutes(ctx))
+func ListenAndServe(addr, version string, ctx *context.Context) error {
+	return http.ListenAndServe(addr, allRoutes(ctx, version))
 }
