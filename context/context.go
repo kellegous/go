@@ -19,13 +19,13 @@ const (
 	idLogFilename    = "id"
 )
 
-// Route ...
+// Route is the value part of a shortcut.
 type Route struct {
 	URL  string    `json:"url"`
 	Time time.Time `json:"time"`
 }
 
-//
+// Serialize this Route into the given Writer.
 func (o *Route) write(w io.Writer) error {
 	if err := binary.Write(w, binary.LittleEndian, o.Time.UnixNano()); err != nil {
 		return err
@@ -38,7 +38,7 @@ func (o *Route) write(w io.Writer) error {
 	return nil
 }
 
-//
+// Deserialize this Route from the given Reader.
 func (o *Route) read(r io.Reader) error {
 	var t int64
 	if err := binary.Read(r, binary.LittleEndian, &t); err != nil {
@@ -55,7 +55,7 @@ func (o *Route) read(r io.Reader) error {
 	return nil
 }
 
-// Context ...
+// Context provides access to the data store.
 type Context struct {
 	path string
 	db   *leveldb.DB
@@ -63,6 +63,7 @@ type Context struct {
 	id   uint64
 }
 
+// Commit the given ID to the data store.
 func commit(filename string, id uint64) error {
 	w, err := os.Create(filename)
 	if err != nil {
@@ -77,6 +78,7 @@ func commit(filename string, id uint64) error {
 	return w.Sync()
 }
 
+// Load the current ID from the data store.
 func load(filename string) (uint64, error) {
 	if _, err := os.Stat(filename); err != nil {
 		return 0, commit(filename, 0)
@@ -96,7 +98,7 @@ func load(filename string) (uint64, error) {
 	return id, nil
 }
 
-// Open ...
+// Open the context using path as the data store location.
 func Open(path string) (*Context, error) {
 	if _, err := os.Stat(path); err != nil {
 		if err := os.MkdirAll(path, os.ModePerm); err != nil {
@@ -122,7 +124,7 @@ func Open(path string) (*Context, error) {
 	}, nil
 }
 
-// Get ...
+// Get retreives a shortcut from the data store.
 func (c *Context) Get(name string) (*Route, error) {
 	val, err := c.db.Get([]byte(name), nil)
 	if err != nil {
@@ -137,7 +139,7 @@ func (c *Context) Get(name string) (*Route, error) {
 	return rt, nil
 }
 
-// Put ...
+// Put stores a new shortcut in the data store.
 func (c *Context) Put(key string, rt *Route) error {
 	var buf bytes.Buffer
 	if err := rt.write(&buf); err != nil {
@@ -147,7 +149,7 @@ func (c *Context) Put(key string, rt *Route) error {
 	return c.db.Put([]byte(key), buf.Bytes(), &opt.WriteOptions{Sync: true})
 }
 
-// Del ...
+// Del removes an existing shortcut from the data store.
 func (c *Context) Del(key string) error {
 	return c.db.Delete([]byte(key), &opt.WriteOptions{Sync: true})
 }
@@ -166,7 +168,7 @@ func (c *Context) commit(id uint64) error {
 	return w.Sync()
 }
 
-// NextID ...
+// NextID generates the next numeric ID to be used for an auto-named shortcut.
 func (c *Context) NextID() (uint64, error) {
 	c.lck.Lock()
 	defer c.lck.Unlock()

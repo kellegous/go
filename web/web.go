@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,13 @@ const (
 	prefix = ":"
 )
 
+var (
+	errInvalidURL   = errors.New("Invalid URL")
+	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
+)
+
+// A very simple encoding of numeric ids. This is simply a base62 encoding
+// prefixed with ":"
 func encodeID(id uint64) string {
 	n := uint64(len(alpha))
 	b := make([]byte, 0, 8)
@@ -36,6 +44,8 @@ func encodeID(id uint64) string {
 	return string(b)
 }
 
+// Clean a shortcut name. Currently this just means stripping any leading
+// ":" to avoid collisions with auto generated names.
 func cleanName(name string) string {
 	for strings.HasPrefix(name, prefix) {
 		name = name[1:]
@@ -43,6 +53,8 @@ func cleanName(name string) string {
 	return name
 }
 
+// Parse the shortcut name from the give URL path, given the base URL that is
+// handling the request.
 func parseName(base, path string) string {
 	t := path[len(base):]
 	ix := strings.Index(t, "/")
@@ -52,17 +64,20 @@ func parseName(base, path string) string {
 	return t[:ix]
 }
 
+// Used as an API response, this is a route with its associated shortcut name.
 type routeWithName struct {
 	Name string `json:"name"`
 	*context.Route
 }
 
+// The response type for all API responses.
 type msg struct {
 	Ok    bool           `json:"ok"`
 	Error string         `json:"error,omitempty"`
 	Route *routeWithName `json:"route,omitempty"`
 }
 
+// Encode the given data to JSON and send it to the client.
 func writeJSON(w http.ResponseWriter, data interface{}, status int) {
 	w.Header().Set("Content-Type", "application/json;charset=utf-8")
 	w.WriteHeader(status)
@@ -71,6 +86,7 @@ func writeJSON(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
+// Encode the given named route as a msg and send it to the client.
 func writeJSONRoute(w http.ResponseWriter, name string, rt *context.Route) {
 	writeJSON(w, &msg{
 		Ok: true,
@@ -81,12 +97,14 @@ func writeJSONRoute(w http.ResponseWriter, name string, rt *context.Route) {
 	}, http.StatusOK)
 }
 
+// Encode a simple success msg and send it to the client.
 func writeJSONOk(w http.ResponseWriter) {
 	writeJSON(w, &msg{
 		Ok: true,
 	}, http.StatusOK)
 }
 
+// Encode an error response and send it to the client.
 func writeJSONError(w http.ResponseWriter, err string) {
 	writeJSON(w, &msg{
 		Ok:    false,
@@ -94,11 +112,13 @@ func writeJSONError(w http.ResponseWriter, err string) {
 	}, http.StatusOK)
 }
 
+// Encode a generic backend error and send it to the client.
 func writeJSONBackendError(w http.ResponseWriter, err error) {
 	log.Printf("[error] %s", err)
 	writeJSONError(w, "backend error")
 }
 
+// Serve a bundled asset over HTTP.
 func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
 	n, err := AssetInfo(name)
 	if err != nil {
@@ -115,24 +135,33 @@ func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
 	http.ServeContent(w, r, n.Name(), n.ModTime(), bytes.NewReader(a))
 }
 
+// The handler that processes all API requests.
 type apiHandler struct {
 	ctx *context.Context
 }
 
-func validURL(s string) bool {
+// Check that the given URL is suitable as a shortcut link.
+func validateURL(r *http.Request, s string) error {
 	u, err := url.Parse(s)
 	if err != nil {
-		return false
+		return errInvalidURL
 	}
 
 	switch u.Scheme {
 	case "http", "https", "mailto", "ftp":
-		return true
+		break
+	default:
+		return errInvalidURL
 	}
 
-	return false
+	if r.Host == u.Host {
+		return errRedirectLoop
+	}
+
+	return nil
 }
 
+// Handle a POST request to the API.
 func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
@@ -161,8 +190,8 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validURL(req.URL) {
-		writeJSONError(w, "invalid URL")
+	if err := validateURL(r, req.URL); err != nil {
+		writeJSONError(w, err.Error())
 		return
 	}
 
@@ -189,6 +218,7 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	writeJSONRoute(w, p, &rt)
 }
 
+// Handle a GET request to the API.
 func apiGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
@@ -220,6 +250,8 @@ func (h *apiHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// The default handler responds to most requests. It is responsible for the
+// shortcut redirects and for sending unmapped shortcuts to the edit page.
 type defaultHandler struct {
 	ctx *context.Context
 }
@@ -246,21 +278,16 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.StatusTemporaryRedirect)
 }
 
-type editHandler struct {
-	ctx *context.Context
-}
-
-func (h *editHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	serveAsset(w, r, "index.html")
-}
-
-// ListenAndServe ...
+// ListenAndServe sets up all web routes, binds the port and handles incoming
+// web requests.
 func ListenAndServe(addr string, ctx *context.Context) error {
 	mux := http.NewServeMux()
 
 	mux.Handle("/", &defaultHandler{ctx})
-	mux.Handle("/edit/", &editHandler{ctx})
 	mux.Handle("/api/url/", &apiHandler{ctx})
+	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
+		serveAsset(w, r, "index.html")
+	})
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
 	})

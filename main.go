@@ -9,8 +9,10 @@ import (
 )
 
 func main() {
-	flagData := flag.String("data", "data", "data")
-	flagAddr := flag.String("addr", ":8067", "addr")
+	flagData := flag.String("data", "data",
+		"The location to use for the data store")
+	flagAddr := flag.String("addr", ":8067",
+		"The address that the HTTP server will bind")
 	flag.Parse()
 
 	ctx, err := context.Open(*flagData)
