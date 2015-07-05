@@ -278,11 +278,9 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.StatusTemporaryRedirect)
 }
 
-// ListenAndServe sets up all web routes, binds the port and handles incoming
-// web requests.
-func ListenAndServe(addr string, ctx *context.Context) error {
+// Setup a Mux with all web routes.
+func allRoutes(ctx *context.Context) *http.ServeMux {
 	mux := http.NewServeMux()
-
 	mux.Handle("/", &defaultHandler{ctx})
 	mux.Handle("/api/url/", &apiHandler{ctx})
 	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
@@ -291,6 +289,11 @@ func ListenAndServe(addr string, ctx *context.Context) error {
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
 	})
+	return mux
+}
 
-	return http.ListenAndServe(addr, mux)
+// ListenAndServe sets up all web routes, binds the port and handles incoming
+// web requests.
+func ListenAndServe(addr string, ctx *context.Context) error {
+	return http.ListenAndServe(addr, allRoutes(ctx))
 }
