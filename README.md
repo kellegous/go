@@ -5,12 +5,12 @@ The first time I encountered "go" links was at Google. Anyone on the corporate
 network could register a URL shortcut and it would redirect the user to the
 appropriate page. So for instance, if you wanted to find out more about BigTable,
 you simply directed your browser at http://go/bigtable and you would be redirected to
-something about the BigTable data storage system. I later found out that the
-first go service at Google was written by Ben Saggins to end the never-ending stream of
-requests for internal CNAME requests. He described it as AOL keywords for the
-corporate network. These days if you go to any reasonably sized company, you are
-likely to find a similar system. Etsy made one after seeing that Twitter had
-one ... it's a contagious and useful little tool. So contagious, in fact, that
+something about the BigTable data storage system. I was later told that the
+first go service at Google was written by Benjamin Staffin to end the never-ending
+stream of requests for internal CNAME requests. He described it as AOL keywords
+for the corporate network. These days if you go to any reasonably sized company,
+you are likely to find a similar system. Etsy made one after seeing that Twitter
+had one ... it's a contagious and useful little tool. So contagious, in fact, that
 many former Googlers that I know have built or contributed to a similar system
 post-Google. I am no different, this is my "go" link service.
 
