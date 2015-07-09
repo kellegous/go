@@ -28,6 +28,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
+	defer ctx.Close()
 
 	log.Panic(web.ListenAndServe(*flagAddr, getVersion(), ctx))
 }

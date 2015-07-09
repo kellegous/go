@@ -21,6 +21,7 @@ func TestGetPut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer ctx.Close()
 
 	if _, err := ctx.Get("not_found"); err != leveldb.ErrNotFound {
 		t.Fatalf("expected ErrNotFound, got \"%v\"", err)
@@ -60,6 +61,7 @@ func TestNextID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer ctx.Close()
 
 	var e uint64 = 1
 	for i := 0; i < 501; i++ {

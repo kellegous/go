@@ -124,6 +124,11 @@ func Open(path string) (*Context, error) {
 	}, nil
 }
 
+// Close the resources associated with this context.
+func (c *Context) Close() error {
+	return c.db.Close()
+}
+
 // Get retreives a shortcut from the data store.
 func (c *Context) Get(name string) (*Route, error) {
 	val, err := c.db.Get([]byte(name), nil)
