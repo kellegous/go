@@ -159,6 +159,23 @@ func (c *Context) Del(key string) error {
 	return c.db.Delete([]byte(key), &opt.WriteOptions{Sync: true})
 }
 
+// get everything in the db so dump it out for backup purposes
+func (c *Context) GetAll() (map [string]Route, error) {
+	golinks := map[string]Route{}
+	iter := c.db.NewIterator(nil, nil)
+	for iter.Next() {
+		key := iter.Key()
+		val := iter.Value()
+		rt := &Route{}
+		if err := rt.read(bytes.NewBuffer(val)); err != nil {
+			return nil, err
+		}
+		golinks[string(key[:])] = *rt
+	}
+
+	return golinks, nil
+}
+
 func (c *Context) commit(id uint64) error {
 	w, err := os.Create(filepath.Join(c.path, idLogFilename))
 	if err != nil {
