@@ -292,6 +292,9 @@ func allRoutes(ctx *context.Context, version string) *http.ServeMux {
 	mux.HandleFunc("/:version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
 	})
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "OK")
+	})
 	return mux
 }
 
