@@ -33,6 +33,7 @@ func (h *adminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		adminGet(h.ctx, w, r)
+	// POST coming later to be able to reload if needed.
 	default:
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed))
 	}
