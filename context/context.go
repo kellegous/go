@@ -163,6 +163,7 @@ func (c *Context) Del(key string) error {
 func (c *Context) GetAll() (map [string]Route, error) {
 	golinks := map[string]Route{}
 	iter := c.db.NewIterator(nil, nil)
+	defer iter.Release()
 
 	for iter.Next() {
 		key := iter.Key()
@@ -173,10 +174,12 @@ func (c *Context) GetAll() (map [string]Route, error) {
 		}
 		golinks[string(key[:])] = *rt
 	}
-	iter.Release()
-	err := iter.Error()
 
-	return golinks, err
+	if err := iter.Error(); err != nil {
+		return nil, err
+	}
+
+	return golinks, nil
 }
 
 func (c *Context) commit(id uint64) error {
