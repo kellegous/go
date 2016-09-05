@@ -22,6 +22,8 @@ func main() {
 		"The location to use for the data store")
 	flagAddr := flag.String("addr", ":8067",
 		"The address that the HTTP server will bind")
+	flagAdmin := flag.Bool("admin", false,
+		"If allowing admin level requests")
 	flag.Parse()
 
 	ctx, err := context.Open(*flagData)
@@ -30,5 +32,5 @@ func main() {
 	}
 	defer ctx.Close()
 
-	log.Panic(web.ListenAndServe(*flagAddr, getVersion(), ctx))
+	log.Panic(web.ListenAndServe(*flagAddr, *flagAdmin, getVersion(), ctx))
 }

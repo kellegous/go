@@ -279,7 +279,7 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Setup a Mux with all web routes.
-func allRoutes(ctx *context.Context, version string) *http.ServeMux {
+func allRoutes(ctx *context.Context, admin bool, version string) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.Handle("/", &defaultHandler{ctx})
 	mux.Handle("/api/url/", &apiHandler{ctx})
@@ -292,11 +292,17 @@ func allRoutes(ctx *context.Context, version string) *http.ServeMux {
 	mux.HandleFunc("/:version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
 	})
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "OK")
+	})
+	if admin {
+		mux.Handle("/admin/", &adminHandler{ctx})
+	}
 	return mux
 }
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
-func ListenAndServe(addr, version string, ctx *context.Context) error {
-	return http.ListenAndServe(addr, allRoutes(ctx, version))
+func ListenAndServe(addr string, admin bool, version string, ctx *context.Context) error {
+	return http.ListenAndServe(addr, allRoutes(ctx, admin, version))
 }
