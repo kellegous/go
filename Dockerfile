@@ -5,7 +5,7 @@ COPY . /go/src/github.com/kellegous/go
 RUN apk update \
   && apk add go git musl-dev \
   && go get github.com/kellegous/go \
-  && apk del go git \
+  && apk del go git musl-dev \
   && rm -rf /var/cache/apk/* \
   && rm -rf /go/src /go/pkg \
   && mkdir /data
