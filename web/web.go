@@ -53,15 +53,15 @@ func cleanName(name string) string {
 	return name
 }
 
-// Parse the shortcut name from the give URL path, given the base URL that is
+// Parse the shortcut name from the given URL path, given the base URL that is
 // handling the request.
-func parseName(base, path string) string {
+func parseName(base, path string) (string, string) {
 	t := path[len(base):]
 	ix := strings.Index(t, "/")
 	if ix == -1 {
-		return t
+		return t, ""
 	}
-	return t[:ix]
+	return t[:ix], t[ix:]
 }
 
 // Used as an API response, this is a route with its associated shortcut name.
@@ -163,7 +163,7 @@ func validateURL(r *http.Request, s string) error {
 
 // Handle a POST request to the API.
 func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
 		URL string `json:"url"`
@@ -220,7 +220,7 @@ func apiPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 // Handle a GET request to the API.
 func apiGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
 		writeJSONOk(w)
@@ -257,7 +257,7 @@ type defaultHandler struct {
 }
 
 func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	p := parseName("/", r.URL.Path)
+	p, remainder := parseName("/", r.URL.Path)
 	if p == "" {
 		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
@@ -273,8 +273,15 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Panic(err)
 	}
 
+	var redirect_url string
+	if remainder == "" {
+		redirect_url = rt.URL
+	} else {
+		redirect_url = strings.TrimRight(rt.URL, "/") + remainder
+	}
+
 	http.Redirect(w, r,
-		rt.URL,
+		redirect_url,
 		http.StatusTemporaryRedirect)
 }
 
