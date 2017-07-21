@@ -63,15 +63,18 @@ form {
   color: #999;
 }
 
-#cmp > a {
+#cmp > a, .links a {
   color: #09f;
   text-decoration: none;
 }
 
-#cmp > .hnt {
-  float: right;
+#cmp > .hnt, .links .full-url {
   color: #ddd;
   text-shadow: 1px 1px 0 #fff;
+}
+
+#cmp > .hnt {
+  float: right;
 }
 
 #cls {
@@ -89,6 +92,25 @@ form {
   display: none;
 }
 
-#cls:hover {
+#cls:hover, .links a:hover {
   opacity: 0.6;
+}
+
+.links {
+  width: 800px;
+  margin: 0 auto;
+}
+
+.links h1 {
+  color: #333;
+  margin-bottom: 40px;
+}
+
+.links ul {
+  padding: 0;
+  list-style-type: none;
+}
+
+.links ul li {
+  margin-bottom: 20px;
 }

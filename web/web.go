@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"fmt"
+    "html/template"
 	"log"
 	"net/http"
 
@@ -52,6 +53,23 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 }
 
+type listLinksHandler struct {
+	ctx *context.Context
+}
+
+func (h *listLinksHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    t := template.New("links");
+    contents, _ := linksHtmlBytes();
+    t, err := t.Parse(string(contents));
+    if err != nil {
+        log.Printf("no template");
+        return
+    }
+
+    routes, _ := h.ctx.GetAll();
+    t.Execute(w, routes);
+}
+
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
 func ListenAndServe(addr string, admin bool, version string, ctx *context.Context) error {
@@ -63,6 +81,7 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
 		apiURLs(ctx, w, r)
 	})
+    mux.Handle("/links", &listLinksHandler{ctx});
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		getDefault(ctx, w, r)
 	})
