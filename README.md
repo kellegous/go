@@ -15,7 +15,7 @@ tool. So contagious, in fact, that many former Googlers that I know have built
 or contributed to a similar system post-Google. I am no different, this is my
 "go" link service.
 
-On slight difference between this go service and Google's is that this one is also
+One slight difference between this go service and Google's is that this one is also
 capable of generating short links for you.
 
 ## Installation
