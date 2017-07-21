@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+    "html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -263,46 +264,65 @@ func (h *defaultHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt, err := h.ctx.Get(p)
-	if err == leveldb.ErrNotFound {
-		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", cleanName(p)),
-			http.StatusTemporaryRedirect)
-		return
-	} else if err != nil {
-		log.Panic(err)
-	}
+    rt, err := h.ctx.Get(p)
+    if err == leveldb.ErrNotFound {
+        http.Redirect(w, r,
+            fmt.Sprintf("/edit/%s", cleanName(p)),
+            http.StatusTemporaryRedirect)
+        return
+    } else if err != nil {
+        log.Panic(err)
+    }
 
-	http.Redirect(w, r,
-		rt.URL,
-		http.StatusTemporaryRedirect)
+    http.Redirect(w, r,
+        rt.URL,
+        http.StatusTemporaryRedirect)
+}
+
+
+type listLinksHandler struct {
+	ctx *context.Context
+}
+
+func (h *listLinksHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+    t := template.New("links");
+    contents, _ := linksHtmlBytes();
+    t, err := t.Parse(string(contents));
+    if err != nil {
+        log.Printf("no template");
+        return
+    }
+
+    routes, _ := h.ctx.GetAll();
+    t.Execute(w, routes);
 }
 
 // Setup a Mux with all web routes.
 func allRoutes(ctx *context.Context, admin bool, version string) *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.Handle("/", &defaultHandler{ctx})
-	mux.Handle("/api/url/", &apiHandler{ctx})
-	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
-		serveAsset(w, r, "index.html")
-	})
-	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
-		serveAsset(w, r, r.URL.Path[len("/s/"):])
-	})
-	mux.HandleFunc("/:version", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, version)
-	})
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "OK")
-	})
-	if admin {
-		mux.Handle("/admin/", &adminHandler{ctx})
-	}
-	return mux
+    mux := http.NewServeMux()
+    mux.Handle("/", &defaultHandler{ctx})
+    mux.Handle("/api/url/", &apiHandler{ctx})
+    mux.Handle("/links", &listLinksHandler{ctx});
+    mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
+        serveAsset(w, r, "index.html")
+    })
+    mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
+        serveAsset(w, r, r.URL.Path[len("/s/"):])
+    })
+    mux.HandleFunc("/:version", func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintln(w, version)
+    })
+    mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+        fmt.Fprintln(w, "OK")
+    })
+    if admin {
+        mux.Handle("/admin/", &adminHandler{ctx})
+    }
+    return mux
 }
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
 func ListenAndServe(addr string, admin bool, version string, ctx *context.Context) error {
-	return http.ListenAndServe(addr, allRoutes(ctx, admin, version))
+    return http.ListenAndServe(addr, allRoutes(ctx, admin, version))
 }
