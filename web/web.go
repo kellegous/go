@@ -53,20 +53,15 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 }
 
-type listLinksHandler struct {
-	ctx *context.Context
-}
-
-func (h *listLinksHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func getLinks(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	t := template.New("links")
 	contents, _ := linksHtmlBytes()
 	t, err := t.Parse(string(contents))
 	if err != nil {
-		log.Printf("no template")
-		return
+		log.Panic(err)
 	}
 
-	routes, _ := h.ctx.GetAll()
+	routes, _ := ctx.GetAll()
 	t.Execute(w, routes)
 }
 
@@ -87,7 +82,9 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, "index.html")
 	})
-	mux.Handle("/links", &listLinksHandler{ctx})
+	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
+		getLinks(ctx, w, r)
+	})
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
 	})
