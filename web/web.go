@@ -95,6 +95,14 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 		fmt.Fprintln(w, "OK")
 	})
 
+	mux.HandleFunc("/debug/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		it := ctx.List([]byte{':' + 1})
+		for it.Next() {
+			fmt.Fprintf(w, "%s %s\n", it.Name(), it.Route().URL)
+		}
+	})
+
 	if admin {
 		mux.Handle("/admin/", &adminHandler{ctx})
 	}

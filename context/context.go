@@ -12,6 +12,7 @@ import (
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
+	"github.com/syndtr/goleveldb/leveldb/util"
 )
 
 const (
@@ -159,8 +160,18 @@ func (c *Context) Del(key string) error {
 	return c.db.Delete([]byte(key), &opt.WriteOptions{Sync: true})
 }
 
-// get everything in the db to dump it out for backup purposes
-func (c *Context) GetAll() (map [string]Route, error) {
+// List all routes in an iterator, starting with the key prefix of start (which can also be nil).
+func (c *Context) List(start []byte) *Iter {
+	return &Iter{
+		it: c.db.NewIterator(&util.Range{
+			Start: start,
+			Limit: nil,
+		}, nil),
+	}
+}
+
+// GetAll gets everything in the db to dump it out for backup purposes
+func (c *Context) GetAll() (map[string]Route, error) {
 	golinks := map[string]Route{}
 	iter := c.db.NewIterator(nil, nil)
 	defer iter.Release()
