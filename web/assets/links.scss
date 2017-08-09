@@ -1,0 +1,34 @@
+@import "lib/global";
+
+.links {
+    width: 800px;
+    margin: 0 auto;
+
+    a {
+        color: #09f;
+        text-decoration: none;
+
+        &:hover {
+            opacity: 0.6;
+        }
+    }
+
+    .full-url {
+        color: #ddd;
+        text-shadow: 1px 1px 0 #fff;
+    }
+}
+
+.links h1 {
+    color: #333;
+    margin-bottom: 40px;
+}
+
+.links ul {
+    padding: 0;
+    list-style-type: none;
+}
+
+.links ul li {
+    margin-bottom: 20px;
+}

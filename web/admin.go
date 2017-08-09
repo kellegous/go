@@ -34,6 +34,6 @@ func (h *adminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		adminGet(h.ctx, w, r)
 	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed))
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }

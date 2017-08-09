@@ -1,30 +1,24 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
+<!DOCTYPE html>
+<html>
+<head>
     <title>Go :: Active Links</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <link href="/s/index.css"
-        rel="stylesheet"
-        type="text/css">
+    <link href="/s/links.css"
+        rel="stylesheet">
     <link href="http://fonts.googleapis.com/css?family=Raleway:400,300"
-        rel="stylesheet"
-        type="text/css">
-  </head>
-  <body>
-
+        rel="stylesheet">
+</head>
+<body>
     <div class="links">
-      <h1>Active links</h1>
-      <ul>
-        {{ range $key, $route := . }}
-        <li>
-          <a href="{{ $route.URL }}">go/{{ $key }}</a><br />
-          <a href="{{ $route.URL }}" class="full-url">{{ $route.URL }}</a>
-        </li>
-        {{ end }}
-      </ul>
+        <h1>Active links</h1>
+        <ul>
+            {{ range $key, $route := . }}
+            <li>
+                <a href="{{ $route.URL }}">go/{{ $key }}</a><br />
+                <a href="{{ $route.URL }}" class="full-url">{{ $route.URL }}</a>
+            </li>
+            {{ end }}
+        </ul>
     </div>
-
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-    <script src="/s/index.js"></script>
-  </body>
+</body>
 </html>

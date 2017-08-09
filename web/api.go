@@ -1,11 +1,13 @@
 package web
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kellegous/go/context"
@@ -17,8 +19,10 @@ const (
 )
 
 var (
-	errInvalidURL   = errors.New("Invalid URL")
-	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
+	errInvalidURL        = errors.New("Invalid URL")
+	errRedirectLoop      = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
+	genURLPrefix    byte = ':'
+	postGenCursor        = []byte{genURLPrefix + 1}
 )
 
 // A very simple encoding of numeric ids. This is simply a base62 encoding
@@ -30,7 +34,7 @@ func encodeID(id uint64) string {
 		return "0"
 	}
 
-	b = append(b, ':')
+	b = append(b, genURLPrefix)
 
 	for id > 0 {
 		b = append(b, alpha[id%n])
@@ -38,6 +42,15 @@ func encodeID(id uint64) string {
 	}
 
 	return string(b)
+}
+
+// Advance to the next contetxt id and encode it as an ID.
+func nextEncodedID(ctx *context.Context) (string, error) {
+	id, err := ctx.NextID()
+	if err != nil {
+		return "", err
+	}
+	return encodeID(id), nil
 }
 
 // Check that the given URL is suitable as a shortcut link.
@@ -69,39 +82,33 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSONError(w, "invalid json")
+		writeJSONError(w, "invalid json", http.StatusBadRequest)
 		return
 	}
 
-	// Handle delete requests
 	if req.URL == "" {
-		if p == "" {
-			writeJSONError(w, "url required")
-			return
-		}
+		writeJSONError(w, "url required", http.StatusBadRequest)
+		return
+	}
 
-		if err := ctx.Del(p); err != nil {
-			writeJSONBackendError(w, err)
-			return
-		}
-
-		writeJSONOk(w)
+	if isBannedName(p) {
+		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
 		return
 	}
 
 	if err := validateURL(r, req.URL); err != nil {
-		writeJSONError(w, err.Error())
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	// If no name is specified, an ID must be generate.
 	if p == "" {
-		id, err := ctx.NextID()
+		var err error
+		p, err = nextEncodedID(ctx)
 		if err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
-		p = encodeID(id)
 	}
 
 	rt := context.Route{
@@ -115,20 +122,19 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSONRoute(w, p, &rt)
-
 }
 
 func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
-		writeJSONOk(w)
+		writeJSONError(w, "no name given", http.StatusBadRequest)
 		return
 	}
 
 	rt, err := ctx.Get(p)
 	if err == leveldb.ErrNotFound {
-		writeJSONOk(w)
+		writeJSONError(w, "Not Found", http.StatusNotFound)
 		return
 	} else if err != nil {
 		writeJSONBackendError(w, err)
@@ -142,14 +148,11 @@ func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) 
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
-		writeJSONError(w, "name required")
+		writeJSONError(w, "name required", http.StatusBadRequest)
 		return
 	}
 
-	if err := ctx.Del(p); err == leveldb.ErrNotFound {
-		writeJSONError(w, fmt.Sprintf("%s not found", p))
-		return
-	} else if err != nil {
+	if err := ctx.Del(p); err != nil {
 		writeJSONBackendError(w, err)
 		return
 	}
@@ -157,9 +160,99 @@ func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) 
 	writeJSONOk(w)
 }
 
+func parseCursor(v string) ([]byte, error) {
+	if v == "" {
+		return nil, nil
+	}
+
+	return base64.URLEncoding.DecodeString(v)
+}
+
+func parseInt(v string, def int) (int, error) {
+	if v == "" {
+		return def, nil
+	}
+
+	i, err := strconv.ParseInt(v, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(i), nil
+}
+
+func parseBool(v string, def bool) (bool, error) {
+	if v == "" {
+		return def, nil
+	}
+
+	v = strings.ToLower(v)
+	if v == "true" || v == "t" || v == "1" {
+		return true, nil
+	}
+
+	if v == "false" || v == "f" || v == "0" {
+		return false, nil
+	}
+
+	return false, errors.New("invalid boolean value")
+}
+
 func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	// TODO(knorton): This will allow enumeration of the routes.
-	writeJSONError(w, http.StatusText(http.StatusNotImplemented))
+	c, err := parseCursor(r.FormValue("cursor"))
+	if err != nil {
+		writeJSONError(w, "invalid cursor value", http.StatusBadRequest)
+		return
+	}
+
+	lim, err := parseInt(r.FormValue("limit"), 100)
+	if err != nil || lim <= 0 || lim > 10000 {
+		writeJSONError(w, "invalid limit value", http.StatusBadRequest)
+		return
+	}
+
+	ig, err := parseBool(r.FormValue("include-generated-names"), false)
+	if err != nil {
+		writeJSONError(w, "invalid include-generated-names value", http.StatusBadRequest)
+		return
+	}
+
+	res := msgRoutes{
+		Ok: true,
+	}
+
+	iter := ctx.List(c)
+	defer iter.Release()
+
+	for iter.Next() {
+		// if we should be ignoring generated links, skip over that range.
+		if !ig && isGenerated(iter.Name()) {
+			iter.Seek(postGenCursor)
+			if !iter.Valid() {
+				break
+			}
+		}
+
+		res.Routes = append(res.Routes, &routeWithName{
+			Name:  iter.Name(),
+			Route: iter.Route(),
+		})
+
+		if len(res.Routes) == lim {
+			break
+		}
+	}
+
+	if iter.Next() {
+		res.Next = base64.URLEncoding.EncodeToString([]byte(iter.Name()))
+	}
+
+	if err := iter.Error(); err != nil {
+		writeJSONBackendError(w, err)
+		return
+	}
+
+	writeJSON(w, &res, http.StatusOK)
 }
 
 func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
@@ -171,7 +264,7 @@ func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	case "DELETE":
 		apiURLDelete(ctx, w, r)
 	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed))
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }
 
@@ -180,7 +273,7 @@ func apiURLs(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		apiURLsGet(ctx, w, r)
 	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed))
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }
 

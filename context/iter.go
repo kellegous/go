@@ -14,6 +14,17 @@ type Iter struct {
 	err  error
 }
 
+func (i *Iter) decode() error {
+	rt := &Route{}
+	if err := rt.read(bytes.NewBuffer(i.it.Value())); err != nil {
+		return err
+	}
+
+	i.name = string(i.it.Key())
+	i.rt = rt
+	return nil
+}
+
 // Valid indicates whether the current values of the iterator are valid.
 func (i *Iter) Valid() bool {
 	return i.it.Valid() && i.err == nil
@@ -21,26 +32,37 @@ func (i *Iter) Valid() bool {
 
 // Next advances the iterator to the next value.
 func (i *Iter) Next() bool {
-	it := i.it
-
 	i.name = ""
 	i.rt = nil
 
-	if !it.Next() {
+	if !i.it.Next() {
 		return false
 	}
 
-	rt := &Route{}
-
-	if err := rt.read(bytes.NewBuffer(it.Value())); err != nil {
+	if err := i.decode(); err != nil {
 		i.err = err
 		return false
 	}
 
-	i.name = string(i.it.Key())
-	i.rt = rt
-
 	return true
+}
+
+// Seek ...
+func (i *Iter) Seek(cur []byte) bool {
+	i.name = ""
+	i.rt = nil
+
+	v := i.it.Seek(cur)
+
+	if !i.it.Valid() {
+		return v
+	}
+
+	if err := i.decode(); err != nil {
+		i.err = err
+	}
+
+	return v
 }
 
 // Error returns any active error that has stopped the iterator.

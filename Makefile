@@ -1,7 +1,7 @@
 CPP = /usr/bin/cpp -P -undef -Wundef -std=c99 -nostdinc -Wtrigraphs -fdollars-in-identifiers -C -Wno-invalid-pp-token
 
 SRC = $(shell find web/assets -maxdepth 1 -type f)
-DST = $(subst web/assets,.build/assets,$(SRC))
+DST = $(patsubst %.scss,%.css,$(patsubst %.ts,%.js,$(subst web/assets,.build/assets,$(SRC))))
 
 ALL: web/bindata.go
 
@@ -11,8 +11,14 @@ ALL: web/bindata.go
 .build/assets:
 	mkdir -p $@
 
-.build/assets/%.js: web/assets/%.js
-	$(CPP) $< | closure-compiler --js_output_file $@
+.build/assets/%.css: web/assets/%.scss
+	sass --no-cache --sourcemap=none --style=compressed $< $@
+
+.build/assets/%.js: web/assets/%.ts
+	$(eval TMP := $(shell mktemp))
+	tsc --out $(TMP) $< 
+	closure-compiler --js $(TMP) --js_output_file $@
+	rm -f $(TMP)
 
 .build/assets/%: web/assets/%
 	cp $< $@
