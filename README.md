@@ -41,17 +41,21 @@ shortcuts will also be available by typing "go/shortcut".
 
 For instance, if you have a DNS server like [pi-hole](https://github.com/pi-hole/pi-hole), you could do the following:
 
-1. Edit the `/etc/hosts` file and add an entry to your static IP
+1. Point your router DNS settings to your DNS Server
+
+![Dns Settings of and on hub router](https://files.aaronthedev.com/$/bvwyb)
+
+2. Edit the `/etc/hosts` file and add an entry to your static IP
 ```
 192.168.my.ip   go
 ```
 
-2. Restart your dns server (may work automatically)
+3. Restart your dns server (may work automatically)
 ```
 sudo /etc/init.d/dnsmasq restart
 ```
 
-3. Test the nslookup
+4. Test the nslookup
 ```
 $ nslookup go
 Server:         192.168.86.1
@@ -61,9 +65,9 @@ Name:   go
 Address: 192.168.86.213
 ```
 
-4. [Flush your own DNS cache](https://help.dreamhost.com/hc/en-us/articles/214981288-Flushing-your-DNS-cache-in-Mac-OS-X-and-Linux)
+5. [Flush your own DNS cache](https://help.dreamhost.com/hc/en-us/articles/214981288-Flushing-your-DNS-cache-in-Mac-OS-X-and-Linux)
 
-5. Test in browser. Make sure to test in something like an incognito window. and be sure to add `http://` or else the chrome omnibar wont try to resolve the address
+6. Test in browser. Make sure to test in something like an incognito window. and be sure to add `http://` or else the chrome omnibar wont try to resolve the address
 
 ## Using the Service
 Once you have it all setup, using it is pretty straight-forward.
