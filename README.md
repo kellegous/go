@@ -80,3 +80,6 @@ Type `go/my-shortcut` and you'll be redirected to the URL.
 
 #### Shorten a URL
 Type `go` and enter the URL.
+
+#### View all active links
+Type `go/links` and it will show all of the currently active links.
