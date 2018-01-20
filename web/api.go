@@ -54,24 +54,31 @@ func nextEncodedID(ctx *context.Context) (string, error) {
 }
 
 // Check that the given URL is suitable as a shortcut link.
-func validateURL(r *http.Request, s string) error {
+func validateURL(r *http.Request, s string) (string, error) {
 	u, err := url.Parse(s)
 	if err != nil {
-		return errInvalidURL
+		return "", errInvalidURL
+	}
+
+	if u.Host == "" && u.Path == ""{
+		return "", errInvalidURL
 	}
 
 	switch u.Scheme {
+	case "":
+		u.Scheme = "http"
+		break
 	case "http", "https", "mailto", "ftp":
 		break
 	default:
-		return errInvalidURL
+		return "", errInvalidURL
 	}
 
 	if r.Host == u.Host {
-		return errRedirectLoop
+		return "", errRedirectLoop
 	}
 
-	return nil
+	return u.String(), nil
 }
 
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
@@ -96,7 +103,8 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := validateURL(r, req.URL); err != nil {
+	reqURL, err := validateURL(r, req.URL)
+	if err != nil {
 		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -112,7 +120,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt := context.Route{
-		URL:  req.URL,
+		URL:  reqURL,
 		Time: time.Now(),
 	}
 
