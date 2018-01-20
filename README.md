@@ -23,7 +23,7 @@ This tool is written in Go (ironically) and can be easily installed  and started
 with the following commands.
 
 ```
-GOPATH=`pwd` go install github.com/kellegous/go
+GOPATH=`pwd` go install github.com/HALtheWise/go-links
 bin/go
 ```
 

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kellegous/go/context"
+	"github.com/HALtheWise/go-links/context"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
