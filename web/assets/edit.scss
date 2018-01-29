@@ -10,28 +10,47 @@ form {
   position: relative;
 }
 
-#url {
+.output {
+  width: 100%;
+  text-align: right;
+}
+
+.hint {
+  font-size: 18px;
+  color: grey;
+  margin-right: 5pt;
+}
+
+.field {
   font-family: 'Raleway', sans-serif;
   font-size: 32px;
   font-weight: 300;
-  width: 600px;
   padding: 25px;
   color: #999;
   border-radius: 4px;
   border: 1px solid #ccc;
   outline: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  width: 600px;
+} 
+
+.shorturl {
+  font-weight: bold;
 }
 
-#url:focus {
+.spacer {
+  height: 80px;
+}
+
+.field:focus {
   border: 1px solid #09f;
 }
 
-#url::-webkit-input-placeholder {
+.field::-webkit-input-placeholder {
    color: #ddd;
 }
 
-#url::-moz-placeholder {
+.field::-moz-placeholder {
    color: #ddd;
 }
 
@@ -87,6 +106,7 @@ form {
   opacity: 0;
   pointer-events: none;
 }
+
 #cls.vis {
   opacity: 0.3;
   pointer-events: inherit;

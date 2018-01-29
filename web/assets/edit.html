@@ -14,7 +14,21 @@
     <form autocomplete="off">
       <div id="bar">
         <div id="cls"></div>
-        <input type="text" id="url" placeholder="Enter the url to shorten"></input>
+        <input type="text" class="field" id="url" placeholder="Enter the url to shorten"></input>
+
+        <div class="spacer"></div>
+
+        <input type="text" class="field shorturl" id="shorturl" placeholder="Desired Shortened URL"></input>
+
+
+        <div class="output">
+          <span class="hint">From OLIN_GUEST (or the internet):</span>
+          go.olin.build/<span class="shorturl echo">...</span>/
+        </div>
+        <div class="output">
+          <span class="hint">From OLIN (or the internal network):</span>
+          go/<span class="shorturl echo">...</span>/
+        </div>
       </div>
       <div id="cmp"></div>
     </form>

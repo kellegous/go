@@ -37,6 +37,21 @@ namespace go {
         }
     };
 
+    var shortUrlDidChange = () => {
+        var shorturl = ($shorturl.value || '').trim();
+        if (shorturl == lastShortUrl) {
+            return;
+        }
+
+        lastShortUrl = shorturl;
+
+        console.log('ShortUrl changed:', shorturl)
+        for (var echo of $echos) {
+            console.log(echo);
+            echo.innerText = shorturl;
+        }
+    };
+
     var formDidSubmit = (e: Event) => {
         e.preventDefault();
 
@@ -136,6 +151,10 @@ namespace go {
         $url.addEventListener('paste', urlDidChange, false);
         $url.addEventListener('change', urlDidChange, false);
 
+        $shorturl.addEventListener('keyup', shortUrlDidChange, false);
+        $shorturl.addEventListener('paste', shortUrlDidChange, false);
+        $shorturl.addEventListener('change', shortUrlDidChange, false);
+
         $cls.addEventListener('click', formDidClear, false);
 
         var name = nameFrom(location.pathname);
@@ -165,7 +184,10 @@ namespace go {
         $cmp = dom.q('#cmp'),
         $cls = dom.q('#cls'),
         $url = <HTMLInputElement>dom.q('#url'),
-        lastUrl: string;
+        $shorturl = <HTMLInputElement>dom.q('#shorturl'),
+        $echos = <Array<HTMLElement>>Array.prototype.slice.call(document.getElementsByClassName("echo")),
+        lastUrl: string,
+        lastShortUrl: string;
 
     appDidLoad();
 }
