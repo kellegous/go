@@ -32,5 +32,6 @@ func main() {
 	}
 	defer ctx.Close()
 
+	log.Printf("Serving on port %s", *flagAddr)
 	log.Panic(web.ListenAndServe(*flagAddr, *flagAdmin, getVersion(), ctx))
 }
