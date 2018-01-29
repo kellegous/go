@@ -21,13 +21,12 @@
         <input type="text" class="field shorturl" id="shorturl" placeholder="Desired Shortened URL"></input>
 
 
-        <div class="output">
-          <span class="hint">From OLIN_GUEST (or the internet):</span>
-          go.olin.build/<span class="shorturl echo">...</span>/
-        </div>
-        <div class="output">
-          <span class="hint">From OLIN (or the internal network):</span>
+        <div id="links">
+          <span class="hint">From OLIN (or the internal network):</span><br>
           go/<span class="shorturl echo">...</span>/
+          <br>
+          <span class="hint">From OLIN_GUEST (or the internet):</span><br>
+          go.olin.build/<span class="shorturl echo">...</span>/
         </div>
       </div>
       <div id="cmp"></div>

@@ -10,9 +10,12 @@ form {
   position: relative;
 }
 
-.output {
+#links {
   width: 100%;
   text-align: right;
+  
+  transition: transform 200ms ease-in-out;
+  transform: scaleY(0);
 }
 
 .hint {
@@ -93,10 +96,11 @@ form {
 
 #cls {
   position: absolute;
-  top: 0;
+  top: 12px;
   right: 0;
-  bottom: 0;
+  // bottom: 0;
   width: 64px;
+  height: 64px;
   background-image: url("/s/close.svg");
   background-position: center center;
   background-repeat: no-repeat;
