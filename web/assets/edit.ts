@@ -35,6 +35,8 @@ namespace go {
         } else {
             $cls.classList.remove('vis');
         }
+
+        postShortUrl(url, $shorturl.value);
     };
 
     var shortUrlDidChange = () => {
@@ -45,11 +47,7 @@ namespace go {
 
         lastShortUrl = shorturl;
 
-        console.log('ShortUrl changed:', shorturl)
-        for (var echo of $echos) {
-            console.log(echo);
-            echo.innerText = shorturl;
-        }
+        postShortUrl($url.value || '', shorturl);
     };
 
     var formDidSubmit = (e: Event) => {
@@ -58,7 +56,11 @@ namespace go {
         var name = nameFrom(location.pathname),
             url = ($url.value || '').trim();
 
-        xhr.post('/api/url/' + name)
+        postShortUrl(url, name);
+    };
+
+    var postShortUrl = (url: string, shorturl: string) => {
+        xhr.post('/api/url/' + shorturl)
             .sendJSON({url: url})
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
@@ -69,18 +71,20 @@ namespace go {
 
                 var route = msg.route;
                 if (!route) {
-                    hideDrawer();
+                    // hideDrawer();
                     return;
                 }
 
                 var url = route.url || '',
                     name = route.name || '';
-                if (url) {
-                    history.replaceState({}, null, '/edit/' + name);
-                    showLink(name);
+
+                showLink(name);
+
+                if (url != $url.value && document.activeElement != $url){
+                    $url.value = url;
                 }
             });
-    };
+    }
 
     var formDidClear = () => {
         var name = nameFrom(location.pathname),
@@ -120,25 +124,24 @@ namespace go {
     };
 
     var showLink = (name: string) => {
-        var lnk = location.origin + '/' + name;
+        console.log("Showing link:", name)
+        if (name){
+            dom.css($links, 'transform', 'scaleY(1)');
+        } else {
+            dom.css($links, 'transform', 'scaleY(0)');
+        }
 
-        $cmp.textContent = '';
-        $cmp.classList.remove('fuck');
-        $cmp.classList.add('link');
+        if (name != $shorturl.value && document.activeElement != $shorturl){
+            $shorturl.value = name;
+        }
 
-        var $a = dom.c('a');
-        $a.setAttribute('href', lnk);
-        $a.textContent = lnk;
-        $cmp.appendChild($a);
+        for (var echo of $echos) {
+            console.log(echo);
+            echo.innerText = name;
+        }
 
-        var $h = dom.c('span');
-        $h.classList.add('hnt');
-        $h.textContent = copyKey();
-        $cmp.appendChild($h);
-
-        dom.css($cmp, 'transform', 'scaleY(1)');
-
-        getSelection().setBaseAndExtent($a, 0, $a, 1);
+        history.replaceState({}, null, '/edit/' + name);
+        return;
     };
 
     // Called when the app loads initially.
@@ -158,10 +161,14 @@ namespace go {
         $cls.addEventListener('click', formDidClear, false);
 
         var name = nameFrom(location.pathname);
+        showLink(name);
         if (!name) {
             $url.focus();
+            $uid = Math.floor(Math.random() * (1<<31));
             return;
-        }
+        } 
+
+        $shorturl.value = name;
 
         xhr.get('/api/url/' + name)
             .send()
@@ -172,7 +179,9 @@ namespace go {
                     return;
                 }
 
-                // TODO(knorton): Hanlde things.
+                // $uid = msg.route.uid || Math.floor(Math.random() * (1<<31));
+                $uid = Math.floor(Math.random() * (1<<31));
+
                 var url = msg.route.url || '';
                 $url.value = url;
                 $url.focus();
@@ -182,10 +191,12 @@ namespace go {
 
     var $frm = <HTMLFormElement>dom.q('form'),
         $cmp = dom.q('#cmp'),
+        $links = dom.q('#links'),
         $cls = dom.q('#cls'),
         $url = <HTMLInputElement>dom.q('#url'),
         $shorturl = <HTMLInputElement>dom.q('#shorturl'),
         $echos = <Array<HTMLElement>>Array.prototype.slice.call(document.getElementsByClassName("echo")),
+        $uid: Number,
         lastUrl: string,
         lastShortUrl: string;
 
