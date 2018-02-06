@@ -17,7 +17,9 @@ namespace go {
     // Called with the window resizes.
     var windowDidResize = () => {
         var rect = $frm.getBoundingClientRect();
-        dom.css($frm, 'margin-top', (window.innerHeight/3 - rect.height/2) + 'px');
+        // Change the top margin of the form to put the middle of the form 
+        // at the 1/3rd point in the window.
+        dom.css($frm, 'margin-top', Math.max(50, (window.innerHeight/3 - rect.height/2)) + 'px');
     };
 
     // Called when the URL changes.
