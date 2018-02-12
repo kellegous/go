@@ -60,7 +60,7 @@ func validateURL(r *http.Request, s string) (string, error) {
 		return "", errInvalidURL
 	}
 
-	if u.Host == "" && u.Path == ""{
+	if u.Host == "" && u.Path == "" {
 		return "", errInvalidURL
 	}
 

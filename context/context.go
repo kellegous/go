@@ -24,7 +24,7 @@ const (
 type Route struct {
 	URL  string    `json:"url"`
 	Time time.Time `json:"time"`
-	Uid   int64	   `json:"uid"`
+	Uid  int64     `json:"uid"`
 }
 
 // Serialize this Route into the given Writer.
