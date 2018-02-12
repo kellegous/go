@@ -1,7 +1,7 @@
 language: go
 go: 
  - 1.9
- - release
+ - 1.x
 
 before-install:
  - nvm install 8
