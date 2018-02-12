@@ -81,5 +81,9 @@
 			"revisionTime": "2018-01-28T14:04:16Z"
 		}
 	],
-	"rootPath": "github.com/HALtheWise/go-links"
+	"rootPath": "github.com/HALtheWise/go-links",
+    "heroku": {
+        	"install" : [ "./..." ],
+        	"goVersion": "go1.6"
+        	 },
 }
