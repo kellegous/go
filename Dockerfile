@@ -10,6 +10,7 @@ RUN apk update \
   && rm -rf /go/src /go/pkg \
   && mkdir /data
 
+# Port might be dynamically set by Heroku, this may or may not be a problem
 EXPOSE 8067
 
 CMD ["/go/bin/go-links", "--data=/data"]

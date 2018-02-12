@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"log"
-
+	"os"
 	"github.com/HALtheWise/go-links/context"
 	"github.com/HALtheWise/go-links/web"
 )
@@ -20,7 +20,7 @@ func getVersion() string {
 func main() {
 	flagData := flag.String("data", "data",
 		"The location to use for the data store")
-	flagAddr := flag.String("addr", ":8067",
+	flagAddr := flag.String("addr", os.Getenv("PORT"), //I hope this works, used to be "8067" - I made a similar change in cmd\dump-loader
 		"The address that the HTTP server will bind")
 	flagAdmin := flag.Bool("admin", false,
 		"If allowing admin level requests")
