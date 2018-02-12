@@ -4,8 +4,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/kellegous/go/context"
-	"github.com/kellegous/go/web"
+	"github.com/HALtheWise/go-links/context"
+	"github.com/HALtheWise/go-links/web"
 )
 
 var version string
@@ -32,5 +32,6 @@ func main() {
 	}
 	defer ctx.Close()
 
+	log.Printf("Serving on port %s", *flagAddr)
 	log.Panic(web.ListenAndServe(*flagAddr, *flagAdmin, getVersion(), ctx))
 }

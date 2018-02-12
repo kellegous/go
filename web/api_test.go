@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kellegous/go/context"
+	"github.com/HALtheWise/go-links/context"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -508,28 +508,30 @@ func TestAPIList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Logf("running tests for ?%s", test.Params.Encode())
-		pages, err := getInPages(e, test.Params)
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Run(fmt.Sprintf("Test with ?%s", test.Params.Encode()),
+			func(t *testing.T) {
+				pages, err := getInPages(e, test.Params)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-		if len(pages) != len(test.Pages) {
-			t.Fatalf("number of pages mismatch %d vs %d", len(pages), len(test.Pages))
-		}
+				if len(pages) != len(test.Pages) {
+					t.Fatalf("number of pages mismatch %d vs %d", len(pages), len(test.Pages))
+				}
 
-		for i, n := 0, len(pages); i < n; i++ {
-			page := pages[i]
-			expected := test.Pages[i]
+				for i, n := 0, len(pages); i < n; i++ {
+					page := pages[i]
+					expected := test.Pages[i]
 
-			if len(page) != len(expected) {
-				t.Fatalf("page %d, length mismatch expected %d got %d", i, len(expected), len(page))
-			}
+					if len(page) != len(expected) {
+						t.Fatalf("page %d, length mismatch expected %d got %d", i, len(expected), len(page))
+					}
 
-			for j, m := 0, len(page); j < m; j++ {
-				mustBeSameNamedRoute(t, page[j], expected[j])
-			}
-		}
+					for j, m := 0, len(page); j < m; j++ {
+						mustBeSameNamedRoute(t, page[j], expected[j])
+					}
+				}
+			})
 	}
 }
 

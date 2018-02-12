@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kellegous/go/context"
+	"github.com/HALtheWise/go-links/context"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
