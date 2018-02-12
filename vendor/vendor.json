@@ -1,5 +1,11 @@
 {
 	"comment": "",
+	"heroku": {
+		"goVersion": "go1.6",
+		"install": [
+			"./..."
+		]
+	},
 	"ignore": "test",
 	"package": [
 		{
@@ -81,9 +87,5 @@
 			"revisionTime": "2018-01-28T14:04:16Z"
 		}
 	],
-	"rootPath": "github.com/HALtheWise/go-links",
-    "heroku": {
-        	"install" : [ "./..." ],
-        	"goVersion": "go1.6"
-        	 },
+	"rootPath": "github.com/HALtheWise/go-links"
 }
