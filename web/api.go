@@ -19,10 +19,8 @@ const (
 )
 
 var (
-	errInvalidURL        = errors.New("Invalid URL")
-	errRedirectLoop      = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
-	genURLPrefix    byte = ':'
-	postGenCursor        = []byte{genURLPrefix + 1}
+	errInvalidURL   = errors.New("Invalid URL")
+	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
 )
 
 // Check that the given URL is suitable as a shortcut link.
@@ -212,10 +210,7 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	for iter.Next() {
 		// if we should be ignoring generated links, skip over that range.
 		if !ig && isGenerated(iter.Name()) {
-			iter.Seek(postGenCursor)
-			if !iter.Valid() {
-				break
-			}
+			continue
 		}
 
 		res.Routes = append(res.Routes, &routeWithName{

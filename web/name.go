@@ -37,7 +37,9 @@ func cleanName(name string) string {
 
 // Is this name one that was generated from the incrementing id.
 func isGenerated(name string) bool {
-	return strings.HasPrefix(name, string(genURLPrefix))
+	//return strings.HasPrefix(name, string(genURLPrefix))
+	// TODO: Fix this function to work with new pronouncable names
+	return false
 }
 
 // isBannedName indicates if the name is one that is reserved by the server?

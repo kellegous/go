@@ -84,17 +84,19 @@ func generateLink(ctx *context.Context, uid uint64) (string, error) {
 		}
 	}
 
-	// Generate a 10-digit number
-	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := fmt.Sprintf("%d", randsource.Intn(9999999999))
-		collides, err := hasCollision(ctx, link, uid)
-		if err != nil {
-			return "", err
-		}
+	// Generate a number, with increasing digit count
+	for _, maxval := range []int{9, 99, 9999, 999999, 9999999999} {
+		for i := 0; i < NUM_ATTEMPTS; i++ {
+			link := fmt.Sprintf("%d", randsource.Intn(maxval))
+			collides, err := hasCollision(ctx, link, uid)
+			if err != nil {
+				return "", err
+			}
 
-		if !collides {
-			// We found something that works!
-			return link, nil
+			if !collides {
+				// We found something that works!
+				return link, nil
+			}
 		}
 	}
 
