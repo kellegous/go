@@ -372,7 +372,7 @@ func TestAPIList(t *testing.T) {
 	defer e.destroy()
 
 	rts := []*routeWithName{
-		&routeWithName{
+		{
 			Name: "0",
 			Route: &context.Route{
 				URL:  "http://0.com/",
@@ -380,7 +380,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "1",
 			Route: &context.Route{
 				URL:  "http://1.com/",
@@ -388,7 +388,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: ":a",
 			Route: &context.Route{
 				URL:  "http://ga.com/",
@@ -396,7 +396,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: ":b",
 			Route: &context.Route{
 				URL:  "http://gb.com/",
@@ -404,7 +404,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "a",
 			Route: &context.Route{
 				URL:  "http://a.com/",
@@ -412,7 +412,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "b",
 			Route: &context.Route{
 				URL:  "http://b.com/",
@@ -428,78 +428,78 @@ func TestAPIList(t *testing.T) {
 	}
 
 	tests := []*listTest{
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1], rts[4], rts[5]},
+				{rts[0], rts[1], rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"true"},
 			}),
 			Pages: [][]*routeWithName{rts},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"false"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1], rts[4], rts[5]},
+				{rts[0], rts[1], rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit": {"2"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1]},
-				[]*routeWithName{rts[4], rts[5]},
+				{rts[0], rts[1]},
+				{rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit":                   {"2"},
 				"include-generated-names": {"true"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1]},
-				[]*routeWithName{rts[2], rts[3]},
-				[]*routeWithName{rts[4], rts[5]},
+				{rts[0], rts[1]},
+				{rts[2], rts[3]},
+				{rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit":  {"2"},
 				"cursor": {base64.URLEncoding.EncodeToString([]byte{':'})},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[4], rts[5]},
+				{rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit":                   {"3"},
 				"include-generated-names": {"true"},
 				"cursor":                  {base64.URLEncoding.EncodeToString([]byte{':'})},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[2], rts[3], rts[4]},
-				[]*routeWithName{rts[5]},
+				{rts[2], rts[3], rts[4]},
+				{rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit": {"1"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0]},
-				[]*routeWithName{rts[1]},
-				[]*routeWithName{rts[4]},
-				[]*routeWithName{rts[5]},
+				{rts[0]},
+				{rts[1]},
+				{rts[4]},
+				{rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"cursor": {base64.URLEncoding.EncodeToString([]byte{'z'})},
 			}),
