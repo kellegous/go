@@ -25,7 +25,7 @@ func TestBlankGenerator(t *testing.T) {
 	nouns = strings.Split("cat dog", " ")
 	adjectives = strings.Split("small large", " ")
 
-	r = rand.New(rand.NewSource(42))
+	randsource = rand.New(rand.NewSource(42))
 
 	desired := []string{"dog", "cat", "smallcat", "largecat", "largedog", "smalldog", "7465766966", "6771026944"}
 	var results []string

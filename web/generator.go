@@ -39,12 +39,14 @@ func init() {
 	adjectives = strings.Split("fuzzy large", " ")
 }
 
-var r *rand.Rand
+var randsource *rand.Rand
 
 func init() {
 	s := rand.NewSource(time.Now().Unix())
-	r = rand.New(s) // initialize local pseudorandom generator
+	randsource = rand.New(s) // initialize local pseudorandom generator
 }
+
+var errCannotGenerate = errors.New("Unable to generate link")
 
 // generateLink() creates, from scratch, a short pronounceable link that does not currently
 // collide with anything in the dictionary.
@@ -55,7 +57,7 @@ func generateLink(ctx *context.Context, uid uint64) (string, error) {
 
 	// Look for single-noun phrases that work
 	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := nouns[r.Intn(len(nouns))]
+		link := nouns[randsource.Intn(len(nouns))]
 		collides, err := hasCollision(ctx, link, uid)
 		if err != nil {
 			return "", err
@@ -70,7 +72,7 @@ func generateLink(ctx *context.Context, uid uint64) (string, error) {
 	// Look for adjective+noun phrases that work
 	for i := 0; i < NUM_ATTEMPTS; i++ {
 		link := fmt.Sprintf("%s%s",
-			adjectives[r.Intn(len(adjectives))], nouns[r.Intn(len(nouns))])
+			adjectives[randsource.Intn(len(adjectives))], nouns[randsource.Intn(len(nouns))])
 		collides, err := hasCollision(ctx, link, uid)
 		if err != nil {
 			return "", err
@@ -84,7 +86,7 @@ func generateLink(ctx *context.Context, uid uint64) (string, error) {
 
 	// Generate a 10-digit number
 	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := fmt.Sprintf("%d", r.Intn(9999999999))
+		link := fmt.Sprintf("%d", randsource.Intn(9999999999))
 		collides, err := hasCollision(ctx, link, uid)
 		if err != nil {
 			return "", err
@@ -96,5 +98,5 @@ func generateLink(ctx *context.Context, uid uint64) (string, error) {
 		}
 	}
 
-	return "", errors.New("Unable to find link")
+	return "", errCannotGenerate
 }

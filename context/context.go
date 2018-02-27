@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -17,7 +16,6 @@ import (
 
 const (
 	routesDbFilename = "routes.db"
-	idLogFilename    = "id"
 )
 
 // Route is the value part of a shortcut.
@@ -61,43 +59,6 @@ func (o *Route) read(r io.Reader) error {
 type Context struct {
 	path string
 	db   *leveldb.DB
-	lck  sync.Mutex
-	id   uint64
-}
-
-// Commit the given ID to the data store.
-func commit(filename string, id uint64) error {
-	w, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
-		return err
-	}
-
-	return w.Sync()
-}
-
-// Load the current ID from the data store.
-func load(filename string) (uint64, error) {
-	if _, err := os.Stat(filename); err != nil {
-		return 0, commit(filename, 0)
-	}
-
-	r, err := os.Open(filename)
-	if err != nil {
-		return 0, err
-	}
-	defer r.Close()
-
-	var id uint64
-	if err := binary.Read(r, binary.LittleEndian, &id); err != nil {
-		return 0, err
-	}
-
-	return id, nil
 }
 
 // Open the context using path as the data store location.
@@ -114,15 +75,9 @@ func Open(path string) (*Context, error) {
 		return nil, err
 	}
 
-	id, err := load(filepath.Join(path, idLogFilename))
-	if err != nil {
-		return nil, err
-	}
-
 	return &Context{
 		path: path,
 		db:   db,
-		id:   id,
 	}, nil
 }
 
@@ -192,32 +147,4 @@ func (c *Context) GetAll() (map[string]Route, error) {
 	}
 
 	return golinks, nil
-}
-
-func (c *Context) commit(id uint64) error {
-	w, err := os.Create(filepath.Join(c.path, idLogFilename))
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
-		return err
-	}
-
-	return w.Sync()
-}
-
-// NextID generates the next numeric ID to be used for an auto-named shortcut.
-func (c *Context) NextID() (uint64, error) {
-	c.lck.Lock()
-	defer c.lck.Unlock()
-
-	c.id++
-
-	if err := commit(filepath.Join(c.path, idLogFilename), c.id); err != nil {
-		return 0, err
-	}
-
-	return c.id, nil
 }
