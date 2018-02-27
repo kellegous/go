@@ -20,14 +20,23 @@ const (
 
 // Route is the value part of a shortcut.
 type Route struct {
-	URL  string    `json:"url"`
-	Time time.Time `json:"time"`
-	Uid  uint64    `json:"uid"`
+	URL       string    `json:"url"`
+	Time      time.Time `json:"time"`
+	Uid       uint64    `json:"uid"`
+	Generated bool      `json:"generated"`
 }
 
 // Serialize this Route into the given Writer.
 func (o *Route) write(w io.Writer) error {
 	if err := binary.Write(w, binary.LittleEndian, o.Time.UnixNano()); err != nil {
+		return err
+	}
+
+	if err := binary.Write(w, binary.LittleEndian, o.Uid); err != nil {
+		return err
+	}
+
+	if err := binary.Write(w, binary.LittleEndian, o.Generated); err != nil {
 		return err
 	}
 
@@ -44,14 +53,22 @@ func (o *Route) read(r io.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, &t); err != nil {
 		return err
 	}
+	o.Time = time.Unix(0, t)
+
+	if err := binary.Read(r, binary.LittleEndian, &o.Uid); err != nil {
+		return err
+	}
+
+	if err := binary.Read(r, binary.LittleEndian, &o.Generated); err != nil {
+		return err
+	}
 
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
 	}
-
 	o.URL = string(b)
-	o.Time = time.Unix(0, t)
+
 	return nil
 }
 

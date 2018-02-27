@@ -117,7 +117,7 @@ func (r *mockResponse) WriteHeader(status int) {
 
 func mustBeSameNamedRoute(t *testing.T, a, b *routeWithName) {
 	if a.Name != b.Name || a.URL != b.URL || a.Time.UnixNano() != b.Time.UnixNano() {
-		t.Fatalf("routes are not same: %v vs %v", a, b)
+		t.Errorf("routes are not same: %v vs %v", a, b)
 	}
 }
 
@@ -389,18 +389,20 @@ func TestAPIList(t *testing.T) {
 		},
 
 		{
-			Name: ":a",
+			Name: ":cat",
 			Route: &context.Route{
-				URL:  "http://ga.com/",
-				Time: time.Now(),
+				URL:       "http://cat.com/",
+				Time:      time.Now(),
+				Generated: true,
 			},
 		},
 
 		{
-			Name: ":b",
+			Name: "_dog",
 			Route: &context.Route{
-				URL:  "http://gb.com/",
-				Time: time.Now(),
+				URL:       "http://dog.com/",
+				Time:      time.Now(),
+				Generated: true,
 			},
 		},
 
@@ -429,35 +431,35 @@ func TestAPIList(t *testing.T) {
 
 	tests := []*listTest{
 		// TODO: Add these tests back, once generated name filtering works again.
-		//{
-		//	Params: url.Values(map[string][]string{}),
-		//	Pages: [][]*routeWithName{
-		//		{rts[0], rts[1], rts[4], rts[5]},
-		//	},
-		//},
+		{
+			Params: url.Values(map[string][]string{}),
+			Pages: [][]*routeWithName{
+				{rts[0], rts[1], rts[4], rts[5]},
+			},
+		},
 		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"true"},
 			}),
 			Pages: [][]*routeWithName{rts},
 		},
-		//{
-		//	Params: url.Values(map[string][]string{
-		//		"include-generated-names": {"false"},
-		//	}),
-		//	Pages: [][]*routeWithName{
-		//		{rts[0], rts[1], rts[4], rts[5]},
-		//	},
-		//},
-		//{
-		//	Params: url.Values(map[string][]string{
-		//		"limit": {"2"},
-		//	}),
-		//	Pages: [][]*routeWithName{
-		//		{rts[0], rts[1]},
-		//		{rts[4], rts[5]},
-		//	},
-		//},
+		{
+			Params: url.Values(map[string][]string{
+				"include-generated-names": {"false"},
+			}),
+			Pages: [][]*routeWithName{
+				{rts[0], rts[1], rts[4], rts[5]},
+			},
+		},
+		{
+			Params: url.Values(map[string][]string{
+				"limit": {"2"},
+			}),
+			Pages: [][]*routeWithName{
+				{rts[0], rts[1]},
+				{rts[4], rts[5]},
+			},
+		},
 		{
 			Params: url.Values(map[string][]string{
 				"limit":                   {"2"},
@@ -469,15 +471,15 @@ func TestAPIList(t *testing.T) {
 				{rts[4], rts[5]},
 			},
 		},
-		//{
-		//	Params: url.Values(map[string][]string{
-		//		"limit":  {"2"},
-		//		"cursor": {base64.URLEncoding.EncodeToString([]byte{':'})},
-		//	}),
-		//	Pages: [][]*routeWithName{
-		//		{rts[4], rts[5]},
-		//	},
-		//},
+		{
+			Params: url.Values(map[string][]string{
+				"limit":  {"2"},
+				"cursor": {base64.URLEncoding.EncodeToString([]byte{':'})},
+			}),
+			Pages: [][]*routeWithName{
+				{rts[4], rts[5]},
+			},
+		},
 		{
 			Params: url.Values(map[string][]string{
 				"limit":                   {"3"},
@@ -489,36 +491,35 @@ func TestAPIList(t *testing.T) {
 				{rts[5]},
 			},
 		},
-		//{
-		//	Params: url.Values(map[string][]string{
-		//		"limit": {"1"},
-		//	}),
-		//	Pages: [][]*routeWithName{
-		//		{rts[0]},
-		//		{rts[1]},
-		//		{rts[4]},
-		//		{rts[5]},
-		//	},
-		//},
-		//{
-		//	Params: url.Values(map[string][]string{
-		//		"cursor": {base64.URLEncoding.EncodeToString([]byte{'z'})},
-		//	}),
-		//	Pages: [][]*routeWithName{nil},
-		//},
+		{
+			Params: url.Values(map[string][]string{
+				"limit": {"1"},
+			}),
+			Pages: [][]*routeWithName{
+				{rts[0]},
+				{rts[1]},
+				{rts[4]},
+				{rts[5]},
+			},
+		},
+		{
+			Params: url.Values(map[string][]string{
+				"cursor": {base64.URLEncoding.EncodeToString([]byte{'z'})},
+			}),
+			Pages: [][]*routeWithName{nil},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("Test with ?%s", test.Params.Encode()),
 			func(t *testing.T) {
-				t.Logf("Testing with ?%s", test.Params.Encode())
 				pages, err := getInPages(e, test.Params)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				if len(pages) != len(test.Pages) {
-					t.Fatalf("number of pages mismatch %d vs %d", len(pages), len(test.Pages))
+					t.Errorf("number of pages mismatch %d vs %d", len(pages), len(test.Pages))
 				}
 
 				for i, n := 0, len(pages); i < n; i++ {
@@ -526,7 +527,7 @@ func TestAPIList(t *testing.T) {
 					expected := test.Pages[i]
 
 					if len(page) != len(expected) {
-						t.Fatalf("page %d, length mismatch expected %d got %d", i, len(expected), len(page))
+						t.Errorf("page %d, length mismatch expected %d got %d", i, len(expected), len(page))
 					}
 
 					for j, m := 0, len(page); j < m; j++ {

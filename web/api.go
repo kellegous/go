@@ -55,8 +55,9 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
-		URL string `json:"url"`
-		Uid uint64 `json:"uid"`
+		URL       string `json:"url"`
+		Uid       uint64 `json:"uid"`
+		Generated bool   `json:"generated"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -92,11 +93,15 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 			writeJSONBackendError(w, err)
 			return
 		}
+
+		req.Generated = true
 	}
 
 	rt := context.Route{
-		URL:  reqURL,
-		Time: time.Now(),
+		URL:       reqURL,
+		Time:      time.Now(),
+		Uid:       req.Uid,
+		Generated: req.Generated,
 	}
 
 	if err := ctx.Put(p, &rt); err != nil {
@@ -209,7 +214,7 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	for iter.Next() {
 		// if we should be ignoring generated links, skip over that range.
-		if !ig && isGenerated(iter.Name()) {
+		if !ig && isGenerated(iter.Route()) {
 			continue
 		}
 
