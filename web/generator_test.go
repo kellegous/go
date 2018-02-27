@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/HALtheWise/go-links/context"
+	"github.com/HALtheWise/o-links/context"
 )
 
 // Regression test

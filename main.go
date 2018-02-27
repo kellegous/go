@@ -4,8 +4,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/HALtheWise/go-links/context"
-	"github.com/HALtheWise/go-links/web"
+	"github.com/HALtheWise/o-links/context"
+	"github.com/HALtheWise/o-links/web"
 )
 
 var version string
