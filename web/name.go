@@ -9,12 +9,18 @@ import (
 const encodedIDPrefix = ":"
 
 var bannedNames = map[string]bool{
-	"api":     true,
-	"edit":    true,
-	"healthz": true,
-	"links":   true,
-	"s":       true,
-	"version": true,
+	"api":         true,
+	"edit":        true,
+	"healthz":     true,
+	"links":       true,
+	"s":           true,
+	"version":     true,
+	"assets":      true,
+	"liscense":    true,
+	"about":       true,
+	"robots.txt":  true,
+	"favicon.ico": true,
+	"sitemap.xml": true,
 }
 
 // Parse the shortcut name from the given URL path, given the base URL that is
