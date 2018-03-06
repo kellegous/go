@@ -4,8 +4,8 @@ import (
 	"flag"
 	"log"
 	"os"
-	"github.com/HALtheWise/go-links/context"
-	"github.com/HALtheWise/go-links/web"
+	"github.com/HALtheWise/o-links/context"
+	"github.com/HALtheWise/o-links/web"
 )
 
 var version string
@@ -26,7 +26,7 @@ func main() {
 		"If allowing admin level requests")
 	flag.Parse()
 
-	ctx, err := context.Open(*flagData)
+	ctx, err := context.Open(*flagData) //leveldb.Open() is called on flagData to create a db in that directory
 	if err != nil {
 		log.Panic(err)
 	}

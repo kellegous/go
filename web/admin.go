@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/HALtheWise/go-links/context"
+	"github.com/HALtheWise/o-links/context"
 )
 
 type adminHandler struct {

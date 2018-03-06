@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/HALtheWise/go-links/context"
+	"github.com/HALtheWise/o-links/context"
 )
 
 // Used as an API response, this is a route with its associated shortcut name.

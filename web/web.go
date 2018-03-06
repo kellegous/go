@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/HALtheWise/go-links/context"
+	"github.com/HALtheWise/o-links/context"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -102,7 +102,7 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 			return
 		}
 
-		serveAsset(w, r, "edit.html")
+		serveAsset(w, r, "edit.html") //apparently this is like a redirect?
 	})
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
 		getLinks(ctx, w, r)
