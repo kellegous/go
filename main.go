@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	"log"
-	"os"
 	"github.com/HALtheWise/o-links/context"
 	"github.com/HALtheWise/o-links/web"
+	"log"
+	"os"
 )
 
 var version string
