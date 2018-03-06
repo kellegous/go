@@ -1,1 +1,8 @@
 .build
+data/
+go-links
+
+*.sublime-project
+*.sublime-workspace
+
+.idea

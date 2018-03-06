@@ -1,0 +1,21 @@
+language: go
+go: 
+ - 1.9
+ - 1.x
+
+before-install:
+ - nvm install 8
+
+cache:
+  directories:
+   - .build
+
+install:
+ - go get ./...
+ - gem install sass
+ - npm install -g typescript
+ - sudo apt install closure-compiler
+ - make
+
+script:
+ - go test -v ./...

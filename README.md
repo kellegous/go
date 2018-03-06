@@ -1,5 +1,7 @@
 # A "go" short-link service
 
+[![Build Status](https://travis-ci.org/HALtheWise/go-links.svg?branch=master)](https://travis-ci.org/HALtheWise/go-links)
+
 ## Background
 The first time I encountered "go" links was at Google. Anyone on the corporate
 network could register a URL shortcut and it would redirect the user to the
@@ -23,7 +25,7 @@ This tool is written in Go (ironically) and can be easily installed  and started
 with the following commands.
 
 ```
-GOPATH=`pwd` go install github.com/kellegous/go
+GOPATH=`pwd` go install github.com/HALtheWise/go-links
 bin/go
 ```
 
