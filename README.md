@@ -1,6 +1,6 @@
 # A "go" short-link service
 
-[![Build Status](https://travis-ci.org/HALtheWise/go-links.svg?branch=master)](https://travis-ci.org/HALtheWise/go-links)
+[![Build Status](https://travis-ci.org/HALtheWise/o-links.svg?branch=master)](https://travis-ci.org/HALtheWise/o-links)
 
 ## Background
 The first time I encountered "go" links was at Google. Anyone on the corporate
