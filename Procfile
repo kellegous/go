@@ -1,1 +1,1 @@
-web: go-links
+web: o-links
