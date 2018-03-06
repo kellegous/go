@@ -19,39 +19,9 @@ const (
 )
 
 var (
-	errInvalidURL        = errors.New("Invalid URL")
-	errRedirectLoop      = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
-	genURLPrefix    byte = ':'
-	postGenCursor        = []byte{genURLPrefix + 1}
+	errInvalidURL   = errors.New("Invalid URL")
+	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
 )
-
-// A very simple encoding of numeric ids. This is simply a base62 encoding
-// prefixed with ":"
-func encodeID(id uint64) string {
-	n := uint64(len(alpha))
-	b := make([]byte, 0, 8)
-	if id == 0 {
-		return "0"
-	}
-
-	b = append(b, genURLPrefix)
-
-	for id > 0 {
-		b = append(b, alpha[id%n])
-		id /= n
-	}
-
-	return string(b)
-}
-
-// Advance to the next contetxt id and encode it as an ID.
-func nextEncodedID(ctx *context.Context) (string, error) {
-	id, err := ctx.NextID()
-	if err != nil {
-		return "", err
-	}
-	return encodeID(id), nil
-}
 
 // Check that the given URL is suitable as a shortcut link.
 func validateURL(r *http.Request, s string) (string, error) {
@@ -60,7 +30,7 @@ func validateURL(r *http.Request, s string) (string, error) {
 		return "", errInvalidURL
 	}
 
-	if u.Host == "" && u.Path == ""{
+	if u.Host == "" && u.Path == "" {
 		return "", errInvalidURL
 	}
 
@@ -85,7 +55,9 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
-		URL string `json:"url"`
+		URL       string `json:"url"`
+		Uid       uint64 `json:"uid"`
+		Generated bool   `json:"generated"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -96,6 +68,10 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	if req.URL == "" {
 		writeJSONError(w, "url required", http.StatusBadRequest)
 		return
+	}
+
+	if req.Uid == 0 {
+		req.Uid = randsource.Uint64()
 	}
 
 	if isBannedName(p) {
@@ -109,19 +85,23 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If no name is specified, an ID must be generate.
+	// If no path is specified, a path must be generated.
 	if p == "" {
 		var err error
-		p, err = nextEncodedID(ctx)
+		p, err = generateLink(ctx, req.Uid)
 		if err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
+
+		req.Generated = true
 	}
 
 	rt := context.Route{
-		URL:  reqURL,
-		Time: time.Now(),
+		URL:       reqURL,
+		Time:      time.Now(),
+		Uid:       req.Uid,
+		Generated: req.Generated,
 	}
 
 	if err := ctx.Put(p, &rt); err != nil {
@@ -234,11 +214,8 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	for iter.Next() {
 		// if we should be ignoring generated links, skip over that range.
-		if !ig && isGenerated(iter.Name()) {
-			iter.Seek(postGenCursor)
-			if !iter.Valid() {
-				break
-			}
+		if !ig && isGenerated(iter.Route()) {
+			continue
 		}
 
 		res.Routes = append(res.Routes, &routeWithName{

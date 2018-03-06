@@ -51,34 +51,6 @@ func TestGetPut(t *testing.T) {
 	}
 }
 
-func TestNextID(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
-
-	ctx, err := Open(filepath.Join(tmp, "data"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer ctx.Close()
-
-	var e uint64 = 1
-	for i := 0; i < 501; i++ {
-		r, err := ctx.NextID()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if r != e {
-			t.Fatalf("expected %d, got %d", e, r)
-		}
-
-		e++
-	}
-}
-
 func TestEmptyList(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {

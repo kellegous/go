@@ -2,17 +2,25 @@ package web
 
 import (
 	"strings"
+
+	"github.com/HALtheWise/o-links/context"
 )
 
 const encodedIDPrefix = ":"
 
 var bannedNames = map[string]bool{
-	"api":     true,
-	"edit":    true,
-	"healthz": true,
-	"links":   true,
-	"s":       true,
-	"version": true,
+	"api":         true,
+	"edit":        true,
+	"healthz":     true,
+	"links":       true,
+	"s":           true,
+	"version":     true,
+	"assets":      true,
+	"liscense":    true,
+	"about":       true,
+	"robots.txt":  true,
+	"favicon.ico": true,
+	"sitemap.xml": true,
 }
 
 // Parse the shortcut name from the given URL path, given the base URL that is
@@ -36,8 +44,8 @@ func cleanName(name string) string {
 }
 
 // Is this name one that was generated from the incrementing id.
-func isGenerated(name string) bool {
-	return strings.HasPrefix(name, string(genURLPrefix))
+func isGenerated(route *context.Route) bool {
+	return route.Generated
 }
 
 // isBannedName indicates if the name is one that is reserved by the server?
