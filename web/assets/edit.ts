@@ -182,7 +182,7 @@ namespace go {
                 }
 
                 // $uid = msg.route.uid || Math.floor(Math.random() * (1<<31));
-                $uid = Math.floor(Math.random() * (1<<31));
+                $uid = msg.route;
 
                 var url = msg.route.url || '';
                 $url.value = url;
@@ -198,7 +198,11 @@ namespace go {
         $url = <HTMLInputElement>dom.q('#url'),
         $shorturl = <HTMLInputElement>dom.q('#shorturl'),
         $echos = <Array<HTMLElement>>Array.prototype.slice.call(document.getElementsByClassName("echo")),
-        $uid: Number,
+        $uid: string,
+        // This object stores the latest route available, with the data type as defined on the server.
+        // It is null if the app has not yet initialized.
+        $route: Object,
+        $inited: boolean = false,
         lastUrl: string,
         lastShortUrl: string;
 

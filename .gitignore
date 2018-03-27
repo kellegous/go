@@ -6,3 +6,5 @@ go-links
 *.sublime-workspace
 
 .idea
+
+env.local

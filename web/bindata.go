@@ -149,7 +149,7 @@ func editJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "edit.js", size: 3262, mode: os.FileMode(436), modTime: time.Unix(1517953264, 0)}
+	info := bindataFileInfo{name: "edit.js", size: 3262, mode: os.FileMode(436), modTime: time.Unix(1522181440, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -266,12 +266,12 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"close.svg":  closeSvg,
-	"edit.css":   editCss,
-	"edit.html":  editHtml,
-	"edit.js":    editJs,
-	"index.js":   indexJs,
-	"links.css":  linksCss,
+	"close.svg": closeSvg,
+	"edit.css": editCss,
+	"edit.html": editHtml,
+	"edit.js": editJs,
+	"index.js": indexJs,
+	"links.css": linksCss,
 	"links.html": linksHtml,
 }
 
@@ -314,14 +314,13 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
-
 var _bintree = &bintree{nil, map[string]*bintree{
-	"close.svg":  &bintree{closeSvg, map[string]*bintree{}},
-	"edit.css":   &bintree{editCss, map[string]*bintree{}},
-	"edit.html":  &bintree{editHtml, map[string]*bintree{}},
-	"edit.js":    &bintree{editJs, map[string]*bintree{}},
-	"index.js":   &bintree{indexJs, map[string]*bintree{}},
-	"links.css":  &bintree{linksCss, map[string]*bintree{}},
+	"close.svg": &bintree{closeSvg, map[string]*bintree{}},
+	"edit.css": &bintree{editCss, map[string]*bintree{}},
+	"edit.html": &bintree{editHtml, map[string]*bintree{}},
+	"edit.js": &bintree{editJs, map[string]*bintree{}},
+	"index.js": &bintree{indexJs, map[string]*bintree{}},
+	"links.css": &bintree{linksCss, map[string]*bintree{}},
 	"links.html": &bintree{linksHtml, map[string]*bintree{}},
 }}
 
@@ -371,3 +370,4 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
+
