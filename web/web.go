@@ -53,6 +53,8 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(fmt.Sprintf("This is the address parseName returned: %s", p))
+
 	rt, err := ctx.Get(p)
 	if err == sql.ErrNoRows {
 		http.Redirect(w, r,
@@ -63,7 +65,7 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		log.Panic(err)
 	}
 
-	fmt.Println(rt.URL)
+	fmt.Println(fmt.Sprintf("This is the address the database pulled out: %s", rt.URL))
 
 	http.Redirect(w, r,
 		rt.URL,
