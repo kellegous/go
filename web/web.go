@@ -63,6 +63,8 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		log.Panic(err)
 	}
 
+	fmt.Println(rt.URL)
+
 	http.Redirect(w, r,
 		rt.URL,
 		http.StatusTemporaryRedirect)
