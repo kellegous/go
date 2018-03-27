@@ -1,12 +1,7 @@
 package context
 
 import (
-	"bytes"
-	"encoding/binary"
-	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"time"
 
 	"database/sql"
@@ -30,14 +25,14 @@ type Route struct {
 }
 
 // Takes a Row object returned from a database query and repackages it into a Route.
-func rowToRoute(r *sql.Row) (*Route, err) {
+func rowToRoute(r *sql.Row) (*Route, error) {
 	var URL string
 	var Time time.Time
 	var Uid uint64
 	var Generated bool
 	var Name string
 
-	if err = row.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
+	if err := r.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
 		/*Scan's destinations have to be in the same order as the columns in the schema*/
 		return nil, err
 	}
@@ -47,7 +42,7 @@ func rowToRoute(r *sql.Row) (*Route, err) {
 	return rt, nil
 }
 
-func createTableIfNotExist(db *sql.DB) err {
+func createTableIfNotExist(db *sql.DB) error {
 	// if a table called linkdata does not exist, set it up
 	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, Time date NOT NULL, Uid uint64 firstkey PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
 	_, err := db.Exec(queryString)
@@ -55,7 +50,7 @@ func createTableIfNotExist(db *sql.DB) err {
 	return err
 }
 
-func dropTable(db *sql.DB) err {
+func dropTable(db *sql.DB) error {
 	_, err := db.Exec("DROP TABLE linkdata")
 	return err
 }
