@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"database/sql"
 	"github.com/HALtheWise/o-links/context"
-	"github.com/pkg/errors"
-	"github.com/syndtr/goleveldb/leveldb"
+	_ "github.com/lib/pq"
 )
 
 // This file is responsible for generating default URLs and validating them.
@@ -17,7 +17,7 @@ import (
 // with a different ID than the one provided.
 func hasCollision(ctx *context.Context, link string, uid uint64) (bool, error) {
 	route, err := ctx.Get(link)
-	if err == leveldb.ErrNotFound {
+	if err == sql.ErrNoRows {
 		return false, nil
 	}
 	if err != nil {

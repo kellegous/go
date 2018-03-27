@@ -8,7 +8,13 @@ import (
 	"net/http"
 
 	"github.com/HALtheWise/o-links/context"
-	"github.com/syndtr/goleveldb/leveldb"
+
+	"database/sql"
+	_ "github.com/lib/pq"
+)
+
+const (
+	sqlErrNotFound = "sql: no rows in result set"
 )
 
 // Serve a bundled asset over HTTP.
@@ -48,7 +54,7 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt, err := ctx.Get(p)
-	if err == leveldb.ErrNotFound {
+	if err == sql.ErrNoRows {
 		http.Redirect(w, r,
 			fmt.Sprintf("/edit/%s", cleanName(p)),
 			http.StatusTemporaryRedirect)
@@ -87,9 +93,11 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
 		apiURL(ctx, w, r)
 	})
-	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(ctx, w, r)
-	})
+
+	/*Taking this one out since it's the most work for the least reward*/
+	// mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
+	// 	apiURLs(ctx, w, r)
+	// })
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		getDefault(ctx, w, r)
 	})

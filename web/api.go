@@ -121,7 +121,7 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt, err := ctx.Get(p)
-	if err == leveldb.ErrNotFound {
+	if err == sql.ErrNoRows {
 		writeJSONError(w, "Not Found", http.StatusNotFound)
 		return
 	} else if err != nil {
@@ -186,60 +186,6 @@ func parseBool(v string, def bool) (bool, error) {
 	return false, errors.New("invalid boolean value")
 }
 
-func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	c, err := parseCursor(r.FormValue("cursor"))
-	if err != nil {
-		writeJSONError(w, "invalid cursor value", http.StatusBadRequest)
-		return
-	}
-
-	lim, err := parseInt(r.FormValue("limit"), 100)
-	if err != nil || lim <= 0 || lim > 10000 {
-		writeJSONError(w, "invalid limit value", http.StatusBadRequest)
-		return
-	}
-
-	ig, err := parseBool(r.FormValue("include-generated-names"), false)
-	if err != nil {
-		writeJSONError(w, "invalid include-generated-names value", http.StatusBadRequest)
-		return
-	}
-
-	res := msgRoutes{
-		Ok: true,
-	}
-
-	iter := ctx.List(c)
-	defer iter.Release()
-
-	for iter.Next() {
-		// if we should be ignoring generated links, skip over that range.
-		if !ig && isGenerated(iter.Route()) {
-			continue
-		}
-
-		res.Routes = append(res.Routes, &routeWithName{
-			Name:  iter.Name(),
-			Route: iter.Route(),
-		})
-
-		if len(res.Routes) == lim {
-			break
-		}
-	}
-
-	if iter.Next() {
-		res.Next = base64.URLEncoding.EncodeToString([]byte(iter.Name()))
-	}
-
-	if err := iter.Error(); err != nil {
-		writeJSONBackendError(w, err)
-		return
-	}
-
-	writeJSON(w, &res, http.StatusOK)
-}
-
 func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
@@ -253,22 +199,9 @@ func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func apiURLs(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "GET":
-		apiURLsGet(ctx, w, r)
-	default:
-		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
-	}
-}
-
 // Setup ...
 func Setup(m *http.ServeMux, ctx *context.Context) {
 	m.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
 		apiURL(ctx, w, r)
-	})
-
-	m.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(ctx, w, r)
 	})
 }

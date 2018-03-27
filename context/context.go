@@ -9,14 +9,15 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
+	"database/sql"
+	_ "github.com/lib/pq"
 )
 
 const (
 	routesDbFilename = "routes.db"
 )
+
+/*NOTES: List method removed because refactoring /api/urls/ seems to be the most work for least reward*/
 
 // Route is the value part of a shortcut.
 type Route struct {
@@ -24,70 +25,57 @@ type Route struct {
 	Time      time.Time `json:"time"`
 	Uid       uint64    `json:"uid"`
 	Generated bool      `json:"generated"`
+	/*A field declaration may be followed by an optional string literal tag, which becomes an attribute for all the fields in the corresponding field declaration.
+	  The tags are made visible through a reflection interface and take part in type identity for structs but are otherwise ignored...*/
 }
 
-// Serialize this Route into the given Writer.
-func (o *Route) write(w io.Writer) error {
-	if err := binary.Write(w, binary.LittleEndian, o.Time.UnixNano()); err != nil {
-		return err
+// Takes a Row object returned from a database query and repackages it into a Route.
+func rowToRoute(r *sql.Row) (*Route, err) {
+	var URL string
+	var Time time.Time
+	var Uid uint64
+	var Generated bool
+	var Name string
+
+	if err = row.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
+		/*Scan's destinations have to be in the same order as the columns in the schema*/
+		return nil, err
 	}
 
-	if err := binary.Write(w, binary.LittleEndian, o.Uid); err != nil {
-		return err
-	}
+	rt := &Route{URL, Time, Uid, Generated}
 
-	if err := binary.Write(w, binary.LittleEndian, o.Generated); err != nil {
-		return err
-	}
-
-	if _, err := w.Write([]byte(o.URL)); err != nil {
-		return err
-	}
-
-	return nil
+	return rt, nil
 }
 
-// Deserialize this Route from the given Reader.
-func (o *Route) read(r io.Reader) error {
-	var t int64
-	if err := binary.Read(r, binary.LittleEndian, &t); err != nil {
-		return err
-	}
-	o.Time = time.Unix(0, t)
+func createTableIfNotExist(db *sql.DB) err {
+	// if a table called linkdata does not exist, set it up
+	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, Time date NOT NULL, Uid uint64 firstkey PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
+	_, err := db.Exec(queryString)
 
-	if err := binary.Read(r, binary.LittleEndian, &o.Uid); err != nil {
-		return err
-	}
-
-	if err := binary.Read(r, binary.LittleEndian, &o.Generated); err != nil {
-		return err
-	}
-
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-	o.URL = string(b)
-
-	return nil
+	return err
 }
 
-// Context provides access to the data store.
-type Context struct {
-	path string
-	db   *leveldb.DB
+func dropTable(db *sql.DB) err {
+	_, err := db.Exec("DROP TABLE linkdata")
+	return err
 }
 
-// Open the context using path as the data store location.
+// Creates a Context that contains a sql.DB (postgres database) and returns a pointer to said context.
+// Currently path isn't used for anything.
 func Open(path string) (*Context, error) {
-	if _, err := os.Stat(path); err != nil {
-		if err := os.MkdirAll(path, os.ModePerm); err != nil {
-			return nil, err
-		}
+	// open the database and return db, a pointer to the sql.DB object
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return nil, err
 	}
 
-	// open the database
-	db, err := leveldb.OpenFile(filepath.Join(path, routesDbFilename), nil)
+	// ping the database
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	err = createTableIfNotExist(db)
 	if err != nil {
 		return nil, err
 	}
@@ -98,69 +86,59 @@ func Open(path string) (*Context, error) {
 	}, nil
 }
 
-// Close the resources associated with this context.
+// Context provides access to the database. path is unnecessary now.
+type Context struct {
+	path string
+	db   *sql.DB // possibly just *DB, I'm not 100% sure here
+}
+
+// Close the database associated with this context.
 func (c *Context) Close() error {
 	return c.db.Close()
 }
 
-// Get retreives a shortcut from the data store.
+// Get retreives a shortcut matching 'name' from the data store.
 func (c *Context) Get(name string) (*Route, error) {
-	val, err := c.db.Get([]byte(name), nil)
-	if err != nil {
-		return nil, err
-	}
 
-	rt := &Route{}
-	if err := rt.read(bytes.NewBuffer(val)); err != nil {
-		return nil, err
-	}
+	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
+	row := c.db.QueryRow("SELECT * FROM linkdata WHERE Name = $1", name)
 
-	return rt, nil
+	return rowToRoute(row)
 }
 
-// Put stores a new shortcut in the data store.
-func (c *Context) Put(key string, rt *Route) error {
-	var buf bytes.Buffer
-	if err := rt.write(&buf); err != nil {
-		return err
-	}
+// Put creates a new row from a route and a name and inserts it into the database.
+func (c *Context) Put(name string, rt *Route) error {
+	_, err = c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.Time, rt.Uid, rt.Generated, rt.Name)
 
-	return c.db.Put([]byte(key), buf.Bytes(), &opt.WriteOptions{Sync: true})
+	return err
 }
 
 // Del removes an existing shortcut from the data store.
-func (c *Context) Del(key string) error {
-	return c.db.Delete([]byte(key), &opt.WriteOptions{Sync: true})
-}
-
-// List all routes in an iterator, starting with the key prefix of start (which can also be nil).
-func (c *Context) List(start []byte) *Iter {
-	return &Iter{
-		it: c.db.NewIterator(&util.Range{
-			Start: start,
-			Limit: nil,
-		}, nil),
-	}
+func (c *Context) Del(name string) error {
+	return c.db.Exec("DELETE FROM linkdata WHERE Name = $1", name)
 }
 
 // GetAll gets everything in the db to dump it out for backup purposes
 func (c *Context) GetAll() (map[string]Route, error) {
 	golinks := map[string]Route{}
-	iter := c.db.NewIterator(nil, nil)
-	defer iter.Release()
 
-	for iter.Next() {
-		key := iter.Key()
-		val := iter.Value()
-		rt := &Route{}
-		if err := rt.read(bytes.NewBuffer(val)); err != nil {
+	rows := c.db.Query("SELECT * FROM linkdata")
+	defer rows.Close()
+
+	var URL string
+	var Time time.Time
+	var Uid uint64
+	var Generated bool
+	var Name string
+
+	for rows.Next() {
+
+		if err := rows.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
 			return nil, err
 		}
-		golinks[string(key[:])] = *rt
-	}
 
-	if err := iter.Error(); err != nil {
-		return nil, err
+		rt := &Route{URL, Time, Uid, Generated}
+		golinks[Name] = *rt
 	}
 
 	return golinks, nil

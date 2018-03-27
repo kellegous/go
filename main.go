@@ -6,6 +6,9 @@ import (
 	"github.com/HALtheWise/o-links/web"
 	"log"
 	"os"
+
+	"database/sql"
+	_ "github.com/lib/pq"
 )
 
 var version string
