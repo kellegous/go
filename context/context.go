@@ -28,9 +28,12 @@ type Route struct {
 func rowToRoute(r *sql.Row) (*Route, error) {
 	var URL string
 	var Time time.Time
-	var Uid uint32
+	var Uid uint32 // Should probably be string eventually, or maybe use postgres' uuid type?
 	var Generated bool
 	var Name string
+	/*
+		Refactor time into Created_at, Modified_at, Deleted_at etc.
+	*/
 
 	if err := r.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
 		/*Scan's destinations have to be in the same order as the columns in the schema*/
@@ -57,7 +60,7 @@ func dropTable(db *sql.DB) error {
 
 // Creates a Context that contains a sql.DB (postgres database) and returns a pointer to said context.
 // Currently path isn't used for anything.
-func Open(path string) (*Context, error) {
+func Open() (*Context, error) {
 	// open the database and return db, a pointer to the sql.DB object
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
@@ -80,15 +83,13 @@ func Open(path string) (*Context, error) {
 	}
 
 	return &Context{
-		path: path,
-		db:   db,
+		db: db,
 	}, nil
 }
 
 // Context provides access to the database. path is unnecessary now.
 type Context struct {
-	path string
-	db   *sql.DB // possibly just *DB, I'm not 100% sure here
+	db *sql.DB
 }
 
 // Close the database associated with this context.
