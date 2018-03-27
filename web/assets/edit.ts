@@ -166,7 +166,7 @@ namespace go {
         showLink(name);
         if (!name) {
             $url.focus();
-            $uid = Math.floor(Math.random() * (1<<31));
+            $uid = Math.floor(Math.random() * (1<<31)).toString();
             return;
         } 
 
@@ -182,7 +182,7 @@ namespace go {
                 }
 
                 // $uid = msg.route.uid || Math.floor(Math.random() * (1<<31));
-                $uid = msg.route;
+                $uid = msg.route.;
 
                 var url = msg.route.url || '';
                 $url.value = url;

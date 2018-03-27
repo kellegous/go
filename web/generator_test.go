@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	"math/rand"
 	"reflect"
 	"strings"
@@ -31,7 +32,7 @@ func TestBlankGenerator(t *testing.T) {
 	var results []string
 
 	for i := range desired {
-		uid := rand.Uint64()
+		uid := fmt.Sprint(rand.Uint64())
 		link, err := generateLink(e.ctx, uid)
 		if err != nil {
 			t.Fatalf("Unable to generate link #%d, %s", i+1, err)

@@ -1,10 +1,12 @@
 package context
 
 import (
+	"fmt"
 	"os"
 	"time"
 
 	"database/sql"
+
 	_ "github.com/lib/pq"
 )
 
@@ -16,10 +18,12 @@ const (
 
 // Route is the value part of a shortcut.
 type Route struct {
-	URL       string    `json:"url"`
-	Time      time.Time `json:"time"`
-	Uid       uint32    `json:"uid"`
-	Generated bool      `json:"generated"`
+	URL        string    `json:"url"`
+	CreatedAt  time.Time `json:"created_at"`
+	ModifiedAt time.Time `json:"modified_at"`
+	DeletedAt  time.Time `json:"deleted_at"`
+	Uid        string    `json:"uid"`
+	Generated  bool      `json:"generated"`
 	/*A field declaration may be followed by an optional string literal tag, which becomes an attribute for all the fields in the corresponding field declaration.
 	  The tags are made visible through a reflection interface and take part in type identity for structs but are otherwise ignored...*/
 }
@@ -30,7 +34,7 @@ type Route struct {
 func rowToRoute(r *sql.Row) (*Route, error) {
 	var URL string
 	var Time time.Time
-	var Uid uint32 // Should probably be string eventually, or maybe use postgres' uuid type?
+	var Uid string
 	var Generated bool
 	var Name string
 	/*
@@ -42,14 +46,14 @@ func rowToRoute(r *sql.Row) (*Route, error) {
 		return nil, err
 	}
 
-	rt := &Route{URL, Time, Uid, Generated}
+	rt := &Route{URL: URL, CreatedAt: Time, Uid: Uid, Generated: Generated}
 
 	return rt, nil
 }
 
 func createTableIfNotExist(db *sql.DB) error {
 	// if a table called linkdata does not exist, set it up
-	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, Time timestamp NOT NULL, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
+	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
 	_, err := db.Exec(queryString)
 
 	return err
@@ -110,7 +114,7 @@ func (c *Context) Get(name string) (*Route, error) {
 
 // Put creates a new row from a route and a name and inserts it into the database.
 func (c *Context) Put(name string, rt *Route) error {
-	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.Time, rt.Uid, rt.Generated, name)
+	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.CreatedAt, rt.Uid, rt.Generated, name)
 
 	return err
 }
@@ -146,7 +150,7 @@ func (c *Context) GetAll() (map[string]Route, error) {
 			return nil, err
 		}
 
-		rt := &Route{URL, Time, Uid, Generated}
+		rt := &Route{URL: URL, CreatedAt: Time, Uid: fmt.Sprint(Uid), Generated: Generated}
 		golinks[Name] = *rt
 	}
 
