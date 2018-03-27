@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"database/sql"
 	"github.com/HALtheWise/o-links/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	_ "github.com/lib/pq"
 )
 
 const (
