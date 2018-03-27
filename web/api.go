@@ -154,7 +154,7 @@ func parseCursor(v string) ([]byte, error) {
 		return nil, nil
 	}
 
-	return base32.Encoding.DecodeString(v)
+	return base32.StdEncoding.DecodeString(v)
 }
 
 func parseInt(v string, def int) (int, error) {
