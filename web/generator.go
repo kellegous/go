@@ -16,7 +16,7 @@ import (
 
 // hasCollision checks whether the proposed link already exists in the database,
 // with a different ID than the one provided.
-func hasCollision(ctx *context.Context, link string, uid uint64) (bool, error) {
+func hasCollision(ctx *context.Context, link string, uid uint32) (bool, error) {
 	route, err := ctx.Get(link)
 	if err == sql.ErrNoRows {
 		return false, nil
