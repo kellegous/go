@@ -1,7 +1,7 @@
 package web
 
 import (
-	"encoding/base64"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -57,7 +57,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		URL       string `json:"url"`
-		Uid       uint64 `json:"uid"`
+		Uid       uint32 `json:"uid"`
 		Generated bool   `json:"generated"`
 	}
 
@@ -72,7 +72,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.Uid == 0 {
-		req.Uid = randsource.Uint64()
+		req.Uid = randsource.Uint32()
 	}
 
 	if isBannedName(p) {
@@ -154,7 +154,7 @@ func parseCursor(v string) ([]byte, error) {
 		return nil, nil
 	}
 
-	return base64.URLEncoding.DecodeString(v)
+	return base32.URLEncoding.DecodeString(v)
 }
 
 func parseInt(v string, def int) (int, error) {

@@ -51,7 +51,7 @@ var errCannotGenerate = errors.New("Unable to generate link")
 
 // generateLink() creates, from scratch, a short pronounceable link that does not currently
 // collide with anything in the dictionary.
-func generateLink(ctx *context.Context, uid uint64) (string, error) {
+func generateLink(ctx *context.Context, uid uint32) (string, error) {
 	const (
 		NUM_ATTEMPTS = 10
 	)

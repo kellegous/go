@@ -18,7 +18,7 @@ const (
 type Route struct {
 	URL       string    `json:"url"`
 	Time      time.Time `json:"time"`
-	Uid       uint64    `json:"uid"`
+	Uid       uint32    `json:"uid"`
 	Generated bool      `json:"generated"`
 	/*A field declaration may be followed by an optional string literal tag, which becomes an attribute for all the fields in the corresponding field declaration.
 	  The tags are made visible through a reflection interface and take part in type identity for structs but are otherwise ignored...*/
@@ -28,7 +28,7 @@ type Route struct {
 func rowToRoute(r *sql.Row) (*Route, error) {
 	var URL string
 	var Time time.Time
-	var Uid uint64
+	var Uid uint32
 	var Generated bool
 	var Name string
 
@@ -129,7 +129,7 @@ func (c *Context) GetAll() (map[string]Route, error) {
 
 	var URL string
 	var Time time.Time
-	var Uid uint64
+	var Uid uint32
 	var Generated bool
 	var Name string
 
