@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"database/sql"
+	_ "github.com/lib/pq"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
