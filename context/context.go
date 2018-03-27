@@ -24,6 +24,8 @@ type Route struct {
 	  The tags are made visible through a reflection interface and take part in type identity for structs but are otherwise ignored...*/
 }
 
+/*Refactor to return a name as well, probably. We may need a different version that takes sql.Rows instead of sql.Row .*/
+
 // Takes a Row object returned from a database query and repackages it into a Route.
 func rowToRoute(r *sql.Row) (*Route, error) {
 	var URL string
