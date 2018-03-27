@@ -44,7 +44,7 @@ func rowToRoute(r *sql.Row) (*Route, error) {
 
 func createTableIfNotExist(db *sql.DB) error {
 	// if a table called linkdata does not exist, set it up
-	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, Time date NOT NULL, Uid uint64 firstkey PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
+	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, Time date NOT NULL, Uid uint64 PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
 	_, err := db.Exec(queryString)
 
 	return err
