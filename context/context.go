@@ -103,21 +103,28 @@ func (c *Context) Get(name string) (*Route, error) {
 
 // Put creates a new row from a route and a name and inserts it into the database.
 func (c *Context) Put(name string, rt *Route) error {
-	_, err = c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.Time, rt.Uid, rt.Generated, rt.Name)
+	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.Time, rt.Uid, rt.Generated, name)
 
 	return err
 }
 
 // Del removes an existing shortcut from the data store.
 func (c *Context) Del(name string) error {
-	return c.db.Exec("DELETE FROM linkdata WHERE Name = $1", name)
+
+	_, err := c.db.Exec("DELETE FROM linkdata WHERE Name = $1", name)
+
+	return err
 }
 
 // GetAll gets everything in the db to dump it out for backup purposes
 func (c *Context) GetAll() (map[string]Route, error) {
 	golinks := map[string]Route{}
 
-	rows := c.db.Query("SELECT * FROM linkdata")
+	rows, err := c.db.Query("SELECT * FROM linkdata")
+	if err != nil {
+		return nil, err
+	}
+
 	defer rows.Close()
 
 	var URL string
