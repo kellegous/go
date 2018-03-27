@@ -70,6 +70,10 @@ func Open(path string) (*Context, error) {
 		return nil, err
 	}
 
+	if os.Getenv("DROPTABLE_EACH_LAUNCH") == "yes" { /*Turn this off once we're ready to launch*/
+		err = dropTable(db)
+	}
+
 	err = createTableIfNotExist(db)
 	if err != nil {
 		return nil, err
