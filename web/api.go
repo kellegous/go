@@ -4,6 +4,7 @@ import (
 	"encoding/base32"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"database/sql"
+
 	"github.com/HALtheWise/o-links/context"
 	_ "github.com/lib/pq"
 )
@@ -57,7 +59,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		URL       string `json:"url"`
-		Uid       uint32 `json:"uid"`
+		Uid       string `json:"uid"`
 		Generated bool   `json:"generated"`
 	}
 
@@ -71,8 +73,8 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Uid == 0 {
-		req.Uid = randsource.Uint32()
+	if req.Uid == "" {
+		req.Uid = fmt.Sprint(randsource.Uint32())
 	}
 
 	if isBannedName(p) {
@@ -100,7 +102,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	rt := context.Route{
 		URL:       reqURL,
-		Time:      time.Now(),
+		CreatedAt: time.Now(),
 		Uid:       req.Uid,
 		Generated: req.Generated,
 	}

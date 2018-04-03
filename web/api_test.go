@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -76,7 +75,7 @@ func newEnv() (*env, error) {
 		return nil, err
 	}
 
-	ctx, err := context.Open(filepath.Join(dir, "data"))
+	ctx, err := context.Open()
 	if err != nil {
 		os.RemoveAll(dir)
 		return nil, err
@@ -116,7 +115,7 @@ func (r *mockResponse) WriteHeader(status int) {
 }
 
 func mustBeSameNamedRoute(t *testing.T, a, b *routeWithName) {
-	if a.Name != b.Name || a.URL != b.URL || a.Time.UnixNano() != b.Time.UnixNano() {
+	if a.Name != b.Name || a.URL != b.URL || a.CreatedAt.UnixNano() != b.CreatedAt.UnixNano() {
 		t.Errorf("routes are not same: %v vs %v", a, b)
 	}
 }
@@ -130,7 +129,7 @@ func mustBeRouteOf(t *testing.T, rt *context.Route, url string) {
 		t.Fatalf("expected url of %s, got %s", url, rt.URL)
 	}
 
-	if rt.Time.IsZero() {
+	if rt.CreatedAt.IsZero() {
 		t.Fatal("route time is empty")
 	}
 }
@@ -273,8 +272,8 @@ func TestAPIDel(t *testing.T) {
 	defer e.destroy()
 
 	if err := e.ctx.Put("xxx", &context.Route{
-		URL:  "http://ex.com/",
-		Time: time.Now(),
+		URL:       "http://ex.com/",
+		CreatedAt: time.Now(),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -375,16 +374,16 @@ func TestAPIList(t *testing.T) {
 		{
 			Name: "0",
 			Route: &context.Route{
-				URL:  "http://0.com/",
-				Time: time.Now(),
+				URL:       "http://0.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 
 		{
 			Name: "1",
 			Route: &context.Route{
-				URL:  "http://1.com/",
-				Time: time.Now(),
+				URL:       "http://1.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 
@@ -392,7 +391,7 @@ func TestAPIList(t *testing.T) {
 			Name: ":cat",
 			Route: &context.Route{
 				URL:       "http://cat.com/",
-				Time:      time.Now(),
+				CreatedAt: time.Now(),
 				Generated: true,
 			},
 		},
@@ -401,7 +400,7 @@ func TestAPIList(t *testing.T) {
 			Name: "_dog",
 			Route: &context.Route{
 				URL:       "http://dog.com/",
-				Time:      time.Now(),
+				CreatedAt: time.Now(),
 				Generated: true,
 			},
 		},
@@ -409,16 +408,16 @@ func TestAPIList(t *testing.T) {
 		{
 			Name: "a",
 			Route: &context.Route{
-				URL:  "http://a.com/",
-				Time: time.Now(),
+				URL:       "http://a.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 
 		{
 			Name: "b",
 			Route: &context.Route{
-				URL:  "http://b.com/",
-				Time: time.Now(),
+				URL:       "http://b.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 	}

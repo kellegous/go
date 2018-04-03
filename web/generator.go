@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"database/sql"
+
 	"github.com/HALtheWise/o-links/context"
 	_ "github.com/lib/pq"
 )
@@ -16,7 +17,7 @@ import (
 
 // hasCollision checks whether the proposed link already exists in the database,
 // with a different ID than the one provided.
-func hasCollision(ctx *context.Context, link string, uid uint32) (bool, error) {
+func hasCollision(ctx *context.Context, link string, uid string) (bool, error) {
 	route, err := ctx.Get(link)
 	if err == sql.ErrNoRows {
 		return false, nil
@@ -51,7 +52,7 @@ var errCannotGenerate = errors.New("Unable to generate link")
 
 // generateLink() creates, from scratch, a short pronounceable link that does not currently
 // collide with anything in the dictionary.
-func generateLink(ctx *context.Context, uid uint32) (string, error) {
+func generateLink(ctx *context.Context, uid string) (string, error) {
 	const (
 		NUM_ATTEMPTS = 10
 	)
