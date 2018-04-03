@@ -61,7 +61,6 @@ func dropTable(db *sql.DB) error {
 }
 
 // Creates a Context that contains a sql.DB (postgres database) and returns a pointer to said context.
-// Currently path isn't used for anything.
 func Open() (*Context, error) {
 	// open the database and return db, a pointer to the sql.DB object
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
@@ -89,7 +88,7 @@ func Open() (*Context, error) {
 	}, nil
 }
 
-// Context provides access to the database. path is unnecessary now.
+// Context provides access to the database.
 type Context struct {
 	db *sql.DB
 }
@@ -109,6 +108,11 @@ func (c *Context) Get(name string) (*Route, error) {
 }
 
 // Put creates a new row from a route and a name and inserts it into the database.
+/*
+What if someone wants to edit an existing row by name?
+Should we check that in api/apiUrlPost (which currently generates a new Route and calls ctx.Put) or here?
+Probably we should have a different method here like Edit, just so these are easy to handle.
+*/
 func (c *Context) Put(name string, rt *Route) error {
 	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.Time, rt.Uid, rt.Generated, name)
 
