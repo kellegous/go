@@ -134,7 +134,7 @@ Should we check that in api/apiUrlPost (which currently generates a new Route an
 Probably we should have a different method here like Edit, just so these are easy to handle.
 */
 func (c *Context) Put(name string, rt *Route) error {
-	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5)", rt.URL, rt.CreatedAt, rt.Uid, rt.Generated, name)
+	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5, $6, $7)", rt.URL, rt.CreatedAt, rt.ModifiedAt, rt.DeletedAt, rt.Uid, rt.Generated, name)
 
 	return err
 }
