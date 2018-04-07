@@ -119,8 +119,9 @@ func (c *Context) Get(name string) (*Route, error) {
 	return rt, nil
 }
 
+//Edits the Url of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
 func (c *Context) Edit(name string, newUrl string) error {
-	_, err := c.db.Exec("UPDATE linkdata SET Url = $1 WHERE Name = $2", newUrl, name)
+	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2, WHERE Name = $3", newUrl, time.Now(), name)
 
 	return err
 }
