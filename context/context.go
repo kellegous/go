@@ -1,7 +1,7 @@
 package context
 
 import (
-	"fmt"
+	// "fmt"
 	"os"
 	"time"
 
@@ -30,30 +30,30 @@ type Route struct {
 
 /*Refactor to return a name as well, probably. We may need a different version that takes sql.Rows instead of sql.Row .*/
 
-// Takes a Row object returned from a database query and repackages it into a Route.
-func rowToRoute(r *sql.Row) (*Route, error) {
+// Takes a Rows object returned from a database query, repackages it into a Route, and returns that plus a name.
+// for rows.Next() { rt = rowToRoute(rows) } should be the proper usage, I think.
+func rowToRoute(r *sql.Rows) (*Route, string, error) {
 	var URL string
-	var Time time.Time
+	var CreatedAt time.Time
+	var ModifiedAt time.Time
+	var DeletedAt time.Time
 	var Uid string
 	var Generated bool
 	var Name string
-	/*
-		Refactor time into Created_at, Modified_at, Deleted_at etc.
-	*/
 
-	if err := r.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
+	if err := r.Scan(&URL, &CreatedAt, &ModifiedAt, &DeletedAt, &Uid, &Generated, &Name); err != nil {
 		/*Scan's destinations have to be in the same order as the columns in the schema*/
-		return nil, err
+		return nil, "", err
 	}
 
-	rt := &Route{URL: URL, CreatedAt: Time, Uid: Uid, Generated: Generated}
+	rt := &Route{URL: URL, CreatedAt: CreatedAt, ModifiedAt: ModifiedAt, DeletedAt: DeletedAt, Uid: Uid, Generated: Generated}
 
-	return rt, nil
+	return rt, Name, nil
 }
 
 func createTableIfNotExist(db *sql.DB) error {
 	// if a table called linkdata does not exist, set it up
-	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
+	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, ModifiedAt timestamp, DeletedAt timestamp, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
 	_, err := db.Exec(queryString)
 
 	return err
@@ -106,9 +106,23 @@ func (c *Context) Close() error {
 func (c *Context) Get(name string) (*Route, error) {
 
 	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
-	row := c.db.QueryRow("SELECT * FROM linkdata WHERE Name = $1", name)
+	rows, err := c.db.Query("SELECT * FROM linkdata WHERE Name = $1", name)
+	if err != nil {
+		return nil, err
+	}
 
-	return rowToRoute(row)
+	rt, name, err := rowToRoute(rows)
+
+	if err != nil {
+		return nil, err
+	}
+	return rt, nil
+}
+
+func (c *Context) Edit(name string, newUrl string) error {
+	_, err := c.db.Exec("UPDATE linkdata SET Url = $1 WHERE Name = $2", newUrl, name)
+
+	return err
 }
 
 // Put creates a new row from a route and a name and inserts it into the database.
@@ -142,20 +156,21 @@ func (c *Context) GetAll() (map[string]Route, error) {
 
 	defer rows.Close()
 
-	var URL string
-	var Time time.Time
-	var Uid uint32
-	var Generated bool
-	var Name string
+	// var URL string
+	// var Time time.Time
+	// var Uid uint32
+	// var Generated bool
+	// var Name string
 
 	for rows.Next() {
+		rt, rowName, err := rowToRoute(rows)
 
-		if err := rows.Scan(&URL, &Time, &Uid, &Generated, &Name); err != nil {
+		if err != nil {
 			return nil, err
 		}
 
-		rt := &Route{URL: URL, CreatedAt: Time, Uid: fmt.Sprint(Uid), Generated: Generated}
-		golinks[Name] = *rt
+		golinks[rowName] = *rt
+
 	}
 
 	return golinks, nil

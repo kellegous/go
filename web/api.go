@@ -54,6 +54,7 @@ func validateURL(r *http.Request, s string) (string, error) {
 	return u.String(), nil
 }
 
+/*What if someone wants to edit an existing row by name? We need to check with ctx.Get() and then edit with a ctx.Edit() method*/
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
@@ -107,11 +108,18 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		Generated: req.Generated,
 	}
 
-	if err := ctx.Put(p, &rt); err != nil {
-		writeJSONBackendError(w, err)
-		return
+	// If a row with the name already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
+	if _, err := ctx.Get(p); err == nil {
+		if err := ctx.Edit(p, rt.URL); err != nil {
+			writeJSONBackendError(w, err)
+			return
+		}
+	} else {
+		if err := ctx.Put(p, &rt); err != nil {
+			writeJSONBackendError(w, err)
+			return
+		}
 	}
-
 	writeJSONRoute(w, p, &rt)
 }
 

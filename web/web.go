@@ -13,10 +13,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const (
-	sqlErrNotFound = "sql: no rows in result set"
-)
-
 // Serve a bundled asset over HTTP.
 func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
 	n, err := AssetInfo(name)
