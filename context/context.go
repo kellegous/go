@@ -111,7 +111,9 @@ func (c *Context) Get(name string) (*Route, error) {
 		return nil, err
 	}
 
-	rt, name, err := rowToRoute(rows)
+	for rows.Next() {
+		rt, name, err := rowToRoute(rows)
+	}
 
 	if err != nil {
 		return nil, err
