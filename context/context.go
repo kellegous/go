@@ -102,9 +102,8 @@ func (c *Context) Close() error {
 	return c.db.Close()
 }
 
-// Get retreives a shortcut matching 'name' from the data store.
+// Get retreives a single shortcut matching 'name' from the data store.
 func (c *Context) Get(name string) (*Route, error) {
-
 	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
 	rows, err := c.db.Query("SELECT * FROM linkdata WHERE Name = $1", name)
 	if err != nil {
@@ -112,13 +111,13 @@ func (c *Context) Get(name string) (*Route, error) {
 	}
 
 	for rows.Next() {
-		rt, name, err := rowToRoute(rows)
+		rt, _, err := rowToRoute(rows)
+		if err != nil {
+			return nil, err
+		}
+		return rt, nil
 	}
-
-	if err != nil {
-		return nil, err
-	}
-	return rt, nil
+	return nil, sql.ErrNoRows
 }
 
 //Edits the Url of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
