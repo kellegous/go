@@ -10,6 +10,7 @@ import (
 	"github.com/HALtheWise/o-links/context"
 
 	"database/sql"
+
 	_ "github.com/lib/pq"
 )
 
@@ -49,7 +50,7 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(fmt.Sprintf("This is the address parseName returned: %s", p))
+	//fmt.Println(fmt.Sprintf("This is the address parseName returned: %s", p))
 
 	rt, err := ctx.Get(p)
 	if err == sql.ErrNoRows {
@@ -117,6 +118,9 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 	})
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
+	})
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		serveAsset(w, r, "favicon.ico")
 	})
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
