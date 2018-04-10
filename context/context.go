@@ -102,6 +102,24 @@ func (c *Context) Close() error {
 	return c.db.Close()
 }
 
+// GetUid retreives a single shortcut matching 'id' from the data store.
+func (c *Context) GetUid(uid string) (*Route, error) {
+	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
+	rows, err := c.db.Query("SELECT * FROM linkdata WHERE Uid = $1", uid)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		rt, _, err := rowToRoute(rows)
+		if err != nil {
+			return nil, err
+		}
+		return rt, nil
+	}
+	return nil, sql.ErrNoRows
+}
+
 // Get retreives a single shortcut matching 'name' from the data store.
 func (c *Context) Get(name string) (*Route, error) {
 	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
@@ -120,9 +138,9 @@ func (c *Context) Get(name string) (*Route, error) {
 	return nil, sql.ErrNoRows
 }
 
-//Edits the Url of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
-func (c *Context) Edit(name string, newUrl string) error {
-	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2 WHERE Name = $3", newUrl, time.Now(), name)
+//Edits the name and URL of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
+func (c *Context) Edit(uid, newName, newUrl string) error {
+	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2, Name = $3 WHERE Uid = $4", newUrl, time.Now(), newName, uid)
 
 	return err
 }

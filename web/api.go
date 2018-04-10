@@ -109,8 +109,8 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If a row with the name already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
-	if _, err := ctx.Get(p); err == nil {
-		if err := ctx.Edit(p, rt.URL); err != nil {
+	if _, err := ctx.GetUid(rt.Uid); err == nil {
+		if err := ctx.Edit(rt.Uid, p, rt.URL); err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
