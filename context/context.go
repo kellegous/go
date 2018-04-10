@@ -109,6 +109,7 @@ func (c *Context) GetUid(uid string) (*Route, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rt, _, err := rowToRoute(rows)
@@ -127,6 +128,7 @@ func (c *Context) Get(name string) (*Route, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		rt, _, err := rowToRoute(rows)
