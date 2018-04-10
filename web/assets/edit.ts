@@ -63,13 +63,17 @@ namespace go {
 
     var postShortUrl = (url: string, shorturl: string) => {
         xhr.post('/api/url/' + shorturl)
-            .sendJSON({url: url})
+            .sendJSON({
+                url: url,
+                uid: $uid
+            })
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
                 if (!msg.ok) {
                     showError(msg.error);
                     return;
                 }
+                console.log("Received response: ", msg)
 
                 var route = msg.route;
                 if (!route) {
@@ -85,6 +89,8 @@ namespace go {
                 if (url != $url.value && document.activeElement != $url){
                     $url.value = url;
                 }
+
+                $uid = msg.route.uid;
             });
     }
 
@@ -182,7 +188,7 @@ namespace go {
                 }
 
                 // $uid = msg.route.uid || Math.floor(Math.random() * (1<<31));
-                $uid = msg.route.;
+                $uid = msg.route.uid;
 
                 var url = msg.route.url || '';
                 $url.value = url;
