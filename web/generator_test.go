@@ -13,7 +13,7 @@ import (
 // Regression test
 func TestBlankGenerator(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	oldnouns := nouns
 	oldadjectives := adjectives

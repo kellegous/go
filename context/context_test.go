@@ -1,29 +1,23 @@
 package context
 
 import (
-	"io/ioutil"
-	"os"
+	"database/sql"
+	"math"
 	"testing"
 	"time"
 
 	_ "github.com/lib/pq"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 func TestGetPut(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(tmp)
-
-	ctx, err := Open()
+	ctx, err := OpenTestCtx()
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer ctx.Close()
+	defer ctx.DropTable()
 
-	if _, err := ctx.Get("not_found"); err != leveldb.ErrNotFound {
+	if _, err := ctx.Get("not_found"); err != sql.ErrNoRows {
 		t.Fatalf("expected ErrNotFound, got \"%v\"", err)
 	}
 
@@ -45,8 +39,8 @@ func TestGetPut(t *testing.T) {
 		t.Fatalf("expected URL of %s, got %s", a.URL, b.URL)
 	}
 
-	if !b.CreatedAt.Equal(a.CreatedAt) {
-		t.Fatalf("expected CreatedAt of %s, got %s", a.CreatedAt, b.CreatedAt)
+	if math.Abs(b.CreatedAt.Sub(a.CreatedAt).Seconds()) > 0.001 {
+		t.Fatalf("expected CreatedAt of %s, got %s, difference %s", a.CreatedAt, b.CreatedAt, b.CreatedAt.Sub(a.CreatedAt))
 	}
 }
 

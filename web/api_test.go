@@ -2,20 +2,19 @@ package web
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/HALtheWise/o-links/context"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type urlReq struct {
@@ -24,12 +23,18 @@ type urlReq struct {
 
 type env struct {
 	mux *http.ServeMux
-	dir string
 	ctx *context.Context
 }
 
-func (e *env) destroy() {
-	os.RemoveAll(e.dir)
+func (e *env) destroy(t *testing.T) {
+	err := e.ctx.DropTable()
+	if err != nil {
+		t.Errorf("Unable to drop table: %v", err)
+	}
+	e.ctx.Close()
+	if err != nil {
+		t.Errorf("Unable to close database: %v", err)
+	}
 }
 
 func (e *env) get(path string) (*mockResponse, error) {
@@ -70,14 +75,8 @@ func (e *env) call(method, path string, body io.Reader) (*mockResponse, error) {
 }
 
 func newEnv() (*env, error) {
-	dir, err := ioutil.TempDir("", "")
+	ctx, err := context.OpenTestCtx()
 	if err != nil {
-		return nil, err
-	}
-
-	ctx, err := context.Open()
-	if err != nil {
-		os.RemoveAll(dir)
 		return nil, err
 	}
 
@@ -87,7 +86,6 @@ func newEnv() (*env, error) {
 
 	return &env{
 		mux: mux,
-		dir: dir,
 		ctx: ctx,
 	}, nil
 }
@@ -165,7 +163,7 @@ func mustHaveStatus(t *testing.T, res *mockResponse, status int) {
 
 func TestAPIGetNotFound(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	names := map[string]int{
 		"":              http.StatusBadRequest,
@@ -192,7 +190,7 @@ func TestAPIGetNotFound(t *testing.T) {
 
 func TestAPIPutThenGet(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	res, err := e.post("/api/url/xxx", &urlReq{
 		URL: "http://ex.com/",
@@ -229,7 +227,7 @@ func TestAPIPutThenGet(t *testing.T) {
 
 func TestBadPuts(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	var m msgErr
 
@@ -269,7 +267,7 @@ func TestBadPuts(t *testing.T) {
 
 func TestAPIDel(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	if err := e.ctx.Put("xxx", &context.Route{
 		URL:       "http://ex.com/",
@@ -291,14 +289,14 @@ func TestAPIDel(t *testing.T) {
 	}
 	mustBeOk(t, m.Ok)
 
-	if _, err := e.ctx.Get("xxx"); err != leveldb.ErrNotFound {
+	if _, err := e.ctx.Get("xxx"); err != sql.ErrNoRows {
 		t.Fatal("expected xxx to be deleted")
 	}
 }
 
 func TestAPIPutThenGetAuto(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	res, err := e.post("/api/url/", &urlReq{URL: "http://b.com/"})
 	if err != nil {
@@ -368,7 +366,7 @@ type listTest struct {
 
 func TestAPIList(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	rts := []*routeWithName{
 		{
@@ -423,6 +421,7 @@ func TestAPIList(t *testing.T) {
 	}
 
 	for _, rt := range rts {
+		rt.Uid = fmt.Sprint(rand.Uint64())
 		if err := e.ctx.Put(rt.Name, rt.Route); err != nil {
 			t.Fatal(err)
 		}
@@ -539,7 +538,7 @@ func TestAPIList(t *testing.T) {
 
 func TestBadList(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	tests := map[string]int{
 		url.Values{
