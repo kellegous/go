@@ -25,11 +25,11 @@ namespace go {
     // Called when the URL changes.
     var urlDidChange = () => {
         var url = ($url.value || '').trim();
-        if (url == lastUrl) {
+        if (url == $route.url) {
             return;
         }
 
-        lastUrl = url;
+        $route.url = url;
 
         hideDrawer();
         if (url) {
@@ -42,12 +42,14 @@ namespace go {
     };
 
     var shortUrlDidChange = () => {
-        var shorturl = ($shorturl.value || '').trim();
-        if (shorturl == lastShortUrl) {
+        const shorturl = ($shorturl.value || '').trim();
+        if (shorturl == $route.name) {
             return;
         }
 
-        lastShortUrl = shorturl;
+        $route.name = shorturl;
+
+        $route.generated = false;
 
         postShortUrl($url.value || '', shorturl);
     };
@@ -62,18 +64,19 @@ namespace go {
     };
 
     var postShortUrl = (url: string, shorturl: string) => {
-        xhr.post('/api/url/' + shorturl)
-            .sendJSON({
-                url: url,
-                uid: $uid
-            })
+        $route.name = shorturl;
+        $route.url = url;
+        $route.modified_count += 1;
+
+        xhr.post('/api/url/' + $route.name)
+            .sendJSON($route)
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
                 if (!msg.ok) {
                     showError(msg.error);
                     return;
                 }
-                console.log("Received response: ", msg)
+                console.log("Received response: ", msg);
 
                 var route = msg.route;
                 if (!route) {
@@ -81,16 +84,17 @@ namespace go {
                     return;
                 }
 
-                var url = route.url || '',
-                    name = route.name || '';
+                if (route.modified_count >= $route.modified_count){
+                    $route = route;
 
-                showLink(name);
+                    if ($route.url != $url.value && document.activeElement != $url){
+                        $url.value = $route.url;
+                    }
 
-                if (url != $url.value && document.activeElement != $url){
-                    $url.value = url;
+                    showLink($route.name)
+                } else {
+                    console.log("Route rejected, perhaps network delay?")
                 }
-
-                $uid = msg.route.uid;
             });
     }
 
@@ -171,10 +175,18 @@ namespace go {
         var name = nameFrom(location.pathname);
         showLink(name);
         if (!name) {
+            // We are making a new link
             $url.focus();
-            $uid = Math.floor(Math.random() * (1<<31)).toString();
+            $route = <Route>{
+                name: "",
+                url: "",
+                generated: false,
+                modified_count: 0
+            };
+            $route.uid = Math.floor(Math.random() * (1<<31)).toString();
+            $inited = true;
             return;
-        } 
+        }
 
         $shorturl.value = name;
 
@@ -187,13 +199,12 @@ namespace go {
                     return;
                 }
 
-                // $uid = msg.route.uid || Math.floor(Math.random() * (1<<31));
-                $uid = msg.route.uid;
+                $route = msg.route;
 
-                var url = msg.route.url || '';
-                $url.value = url;
+                $url.value = $route.url;
                 $url.focus();
                 urlDidChange();
+                $inited = true;
             });
     };
 
@@ -207,10 +218,8 @@ namespace go {
         $uid: string,
         // This object stores the latest route available, with the data type as defined on the server.
         // It is null if the app has not yet initialized.
-        $route: Object,
-        $inited: boolean = false,
-        lastUrl: string,
-        lastShortUrl: string;
+        $route: Route,
+        $inited: boolean = false;
 
     appDidLoad();
 }

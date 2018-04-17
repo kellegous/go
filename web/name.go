@@ -9,6 +9,7 @@ import (
 const encodedIDPrefix = ":"
 
 var bannedNames = map[string]bool{
+	"admin":       true,
 	"api":         true,
 	"edit":        true,
 	"healthz":     true,

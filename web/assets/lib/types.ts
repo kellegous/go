@@ -6,6 +6,7 @@ interface Route {
     modified_at: string;
     deleted_at: string;
 	generated: boolean;
+	modified_count: number;
 }
 
 interface Msg {

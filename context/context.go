@@ -18,12 +18,13 @@ const (
 
 // Route is the value part of a shortcut.
 type Route struct {
-	URL        string    `json:"url"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
-	DeletedAt  time.Time `json:"deleted_at"`
-	Uid        string    `json:"uid"`
-	Generated  bool      `json:"generated"`
+	URL           string    `json:"url"`
+	CreatedAt     time.Time `json:"created_at"`
+	ModifiedAt    time.Time `json:"modified_at"`
+	DeletedAt     time.Time `json:"deleted_at"`
+	Uid           string    `json:"uid"`
+	Generated     bool      `json:"generated"`
+	ModifiedCount int       `json:"modified_count"`
 	/*A field declaration may be followed by an optional string literal tag, which becomes an attribute for all the fields in the corresponding field declaration.
 	  The tags are made visible through a reflection interface and take part in type identity for structs but are otherwise ignored...*/
 }
@@ -40,20 +41,21 @@ func rowToRoute(r *sql.Rows) (*Route, string, error) {
 	var Uid string
 	var Generated bool
 	var Name string
+	var ModifiedCount int
 
-	if err := r.Scan(&URL, &CreatedAt, &ModifiedAt, &DeletedAt, &Uid, &Generated, &Name); err != nil {
+	if err := r.Scan(&URL, &CreatedAt, &ModifiedAt, &DeletedAt, &Uid, &Generated, &Name, &ModifiedCount); err != nil {
 		/*Scan's destinations have to be in the same order as the columns in the schema*/
 		return nil, "", err
 	}
 
-	rt := &Route{URL: URL, CreatedAt: CreatedAt, ModifiedAt: ModifiedAt, DeletedAt: DeletedAt, Uid: Uid, Generated: Generated}
+	rt := &Route{URL: URL, CreatedAt: CreatedAt, ModifiedAt: ModifiedAt, DeletedAt: DeletedAt, Uid: Uid, Generated: Generated, ModifiedCount: ModifiedCount}
 
 	return rt, Name, nil
 }
 
 func createTableIfNotExist(db *sql.DB) error {
 	// if a table called linkdata does not exist, set it up
-	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, ModifiedAt timestamp, DeletedAt timestamp, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL)"
+	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, ModifiedAt timestamp, DeletedAt timestamp, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL, ModifiedCount int NOT NULL)"
 	_, err := db.Exec(queryString)
 
 	return err
@@ -141,8 +143,9 @@ func (c *Context) Get(name string) (*Route, error) {
 }
 
 //Edits the name and URL of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
-func (c *Context) Edit(uid, newName, newUrl string) error {
-	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2, Name = $3 WHERE Uid = $4", newUrl, time.Now(), newName, uid)
+func (c *Context) Edit(uid, newName, newUrl string, modifiedCount int) error {
+	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2, Name = $3, ModifiedCount = $4 WHERE Uid = $5",
+		newUrl, time.Now(), newName, modifiedCount, uid)
 
 	return err
 }
@@ -154,7 +157,7 @@ Should we check that in api/apiUrlPost (which currently generates a new Route an
 Probably we should have a different method here like Edit, just so these are easy to handle.
 */
 func (c *Context) Put(name string, rt *Route) error {
-	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5, $6, $7)", rt.URL, rt.CreatedAt, rt.ModifiedAt, rt.DeletedAt, rt.Uid, rt.Generated, name)
+	_, err := c.db.Exec("INSERT INTO linkdata VALUES ($1, $2, $3, $4, $5, $6, $7, $8)", rt.URL, rt.CreatedAt, rt.ModifiedAt, rt.DeletedAt, rt.Uid, rt.Generated, name, rt.ModifiedCount)
 
 	return err
 }

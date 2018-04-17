@@ -50,6 +50,11 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, ok := bannedNames[p]; ok {
+		http.Error(w, "Not Allowed", 404)
+		return
+	}
+
 	//fmt.Println(fmt.Sprintf("This is the address parseName returned: %s", p))
 
 	rt, err := ctx.Get(p)

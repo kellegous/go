@@ -57,11 +57,11 @@ func validateURL(r *http.Request, s string) (string, error) {
 /*What if someone wants to edit an existing row by name? We need to check with ctx.Get() and then edit with a ctx.Edit() method*/
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
-
 	var req struct {
-		URL       string `json:"url"`
-		Uid       string `json:"uid"`
-		Generated bool   `json:"generated"`
+		URL           string `json:"url"`
+		Uid           string `json:"uid"`
+		Generated     bool   `json:"generated"`
+		ModifiedCount int    `json:"modified_count"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -102,15 +102,16 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	rt := context.Route{
-		URL:       reqURL,
-		CreatedAt: time.Now(),
-		Uid:       req.Uid,
-		Generated: req.Generated,
+		URL:           reqURL,
+		CreatedAt:     time.Now(),
+		Uid:           req.Uid,
+		Generated:     req.Generated,
+		ModifiedCount: req.ModifiedCount,
 	}
 
 	// If a row with the name already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
 	if _, err := ctx.GetUid(rt.Uid); err == nil {
-		if err := ctx.Edit(rt.Uid, p, rt.URL); err != nil {
+		if err := ctx.Edit(rt.Uid, p, rt.URL, rt.ModifiedCount); err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
