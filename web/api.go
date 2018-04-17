@@ -56,7 +56,7 @@ func validateURL(r *http.Request, s string) (string, error) {
 
 /*What if someone wants to edit an existing row by name? We need to check with ctx.Get() and then edit with a ctx.Edit() method*/
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	name := parseName("/api/url/", r.URL.Path)
 	var req struct {
 		URL           string `json:"url"`
 		Uid           string `json:"uid"`
@@ -78,7 +78,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		req.Uid = fmt.Sprint(randsource.Uint32())
 	}
 
-	if isBannedName(p) {
+	if isBannedName(name) {
 		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
 		return
 	}
@@ -90,9 +90,9 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If no path is specified, a path must be generated.
-	if p == "" {
+	if name == "" {
 		var err error
-		p, err = generateLink(ctx, req.Uid)
+		name, err = generateLink(ctx, req.Uid)
 		if err != nil {
 			writeJSONBackendError(w, err)
 			return
@@ -111,17 +111,17 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 	// If a row with the name already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
 	if _, err := ctx.GetUid(rt.Uid); err == nil {
-		if err := ctx.Edit(rt.Uid, p, rt.URL, rt.ModifiedCount); err != nil {
+		if err := ctx.Edit(&rt, name); err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
 	} else {
-		if err := ctx.Put(p, &rt); err != nil {
+		if err := ctx.Put(name, &rt); err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
 	}
-	writeJSONRoute(w, p, &rt)
+	writeJSONRoute(w, name, &rt)
 }
 
 func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {

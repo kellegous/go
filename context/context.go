@@ -55,7 +55,7 @@ func rowToRoute(r *sql.Rows) (*Route, string, error) {
 
 func createTableIfNotExist(db *sql.DB) error {
 	// if a table called linkdata does not exist, set it up
-	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, ModifiedAt timestamp, DeletedAt timestamp, Uid bigint PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL, ModifiedCount int NOT NULL)"
+	queryString := "CREATE TABLE IF NOT EXISTS linkdata (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, ModifiedAt timestamp, DeletedAt timestamp, Uid varchar(100) PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL, ModifiedCount int NOT NULL)"
 	_, err := db.Exec(queryString)
 
 	return err
@@ -143,9 +143,9 @@ func (c *Context) Get(name string) (*Route, error) {
 }
 
 //Edits the name and URL of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
-func (c *Context) Edit(uid, newName, newUrl string, modifiedCount int) error {
-	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2, Name = $3, ModifiedCount = $4 WHERE Uid = $5",
-		newUrl, time.Now(), newName, modifiedCount, uid)
+func (c *Context) Edit(route *Route, name string) error {
+	_, err := c.db.Exec("UPDATE linkdata SET Url = $1, ModifiedAt = $2, Name = $3, ModifiedCount = $4, Generated=$5 WHERE Uid = $6",
+		route.URL, time.Now(), name, route.ModifiedCount, route.Generated, route.Uid)
 
 	return err
 }
@@ -180,12 +180,6 @@ func (c *Context) GetAll() (map[string]Route, error) {
 	}
 
 	defer rows.Close()
-
-	// var URL string
-	// var Time time.Time
-	// var Uid uint32
-	// var Generated bool
-	// var Name string
 
 	for rows.Next() {
 		rt, rowName, err := rowToRoute(rows)

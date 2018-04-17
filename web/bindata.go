@@ -150,7 +150,7 @@ func editJs() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "edit.js", size: 3523, mode: os.FileMode(436), modTime: time.Unix(1523992124, 0)}
+	info := bindataFileInfo{name: "edit.js", size: 3523, mode: os.FileMode(436), modTime: time.Unix(1523998888, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -170,7 +170,7 @@ func faviconIco() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "favicon.ico", size: 73278, mode: os.FileMode(436), modTime: time.Unix(1523387396, 0)}
+	info := bindataFileInfo{name: "favicon.ico", size: 73278, mode: os.FileMode(436), modTime: time.Unix(1523998888, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
