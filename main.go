@@ -24,6 +24,8 @@ func main() {
 		"The address that the HTTP server will bind")
 	flagAdmin := flag.Bool("admin", false,
 		"If allowing admin level requests")
+	flagHTPassword := flag.String("htpasswd", "htpasswd",
+		"specify htpasswd file for HTTP basic auth")
 	flag.Parse()
 
 	ctx, err := context.Open(*flagData)
@@ -32,5 +34,6 @@ func main() {
 	}
 	defer ctx.Close()
 
-	log.Panic(web.ListenAndServe(*flagAddr, *flagAdmin, getVersion(), ctx))
+	log.Panic(web.ListenAndServe(
+		*flagAddr, *flagAdmin, getVersion(), *flagHTPassword, ctx))
 }

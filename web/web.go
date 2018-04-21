@@ -81,32 +81,41 @@ func getLinks(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
-func ListenAndServe(addr string, admin bool, version string, ctx *context.Context) error {
+func ListenAndServe(
+	addr string, admin bool, version string,
+	htpasswd string, ctx *context.Context) error {
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(ctx, w, r)
-	})
-	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(ctx, w, r)
-	})
+	auth := NewBasicAuth("go", htpasswd)
+
+	mux.Handle("/api/url/", auth.WrapHandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			apiURL(ctx, w, r)
+		}))
+	mux.Handle("/api/urls/", auth.WrapHandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			apiURLs(ctx, w, r)
+		}))
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		getDefault(ctx, w, r)
 	})
-	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
-		p := parseName("/edit/", r.URL.Path)
+	mux.Handle("/edit/", auth.WrapHandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			p := parseName("/edit/", r.URL.Path)
 
-		// if this is a banned name, just redirect to the local URI. That'll show em.
-		if isBannedName(p) {
-			http.Redirect(w, r, fmt.Sprintf("/%s", p), http.StatusTemporaryRedirect)
-			return
-		}
+			// if this is a banned name, just redirect to the local URI. That'll show em.
+			if isBannedName(p) {
+				http.Redirect(w, r, fmt.Sprintf("/%s", p), http.StatusTemporaryRedirect)
+				return
+			}
 
-		serveAsset(w, r, "edit.html")
-	})
-	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
-		getLinks(ctx, w, r)
-	})
+			serveAsset(w, r, "edit.html")
+		}))
+	mux.Handle("/links/", auth.WrapHandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			getLinks(ctx, w, r)
+		}))
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
 	})
