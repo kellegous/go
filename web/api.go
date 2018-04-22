@@ -23,7 +23,8 @@ const (
 
 var (
 	errInvalidURL   = errors.New("Invalid URL")
-	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
+	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that." +
+		"Recursive links are not currently supported.")
 )
 
 // Check that the given URL is suitable as a shortcut link.

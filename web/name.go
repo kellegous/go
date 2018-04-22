@@ -17,7 +17,7 @@ var bannedNames = map[string]bool{
 	"s":           true,
 	"version":     true,
 	"assets":      true,
-	"liscense":    true,
+	"license":     true,
 	"about":       true,
 	"robots.txt":  true,
 	"favicon.ico": true,
