@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"strings"
 
-	// "fmt"
 	"os"
 	"time"
 
@@ -127,7 +126,7 @@ func OpenTestCtx() (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer db.Exec("DROP TABLE $1", table_name)
+	defer db.Exec("DROP TABLE " + table_name)
 
 	return &Context{
 		db:         db,
@@ -186,8 +185,8 @@ func (c *Context) Get(name string) (*Route, error) {
 
 //Edits the name and URL of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
 func (c *Context) Edit(route *Route, name string) error {
-	_, err := c.db.Exec("UPDATE $1 SET Url = $2, ModifiedAt = $3, Name = $4, ModifiedCount = $5, Generated=$6 WHERE Uid = $7",
-		c.table_name, route.URL, time.Now(), name, route.ModifiedCount, route.Generated, route.Uid)
+	_, err := c.db.Exec("UPDATE "+c.table_name+" SET Url = $1, ModifiedAt = $2, Name = $3, ModifiedCount = $4, Generated=$5 WHERE Uid = $6",
+		route.URL, time.Now(), name, route.ModifiedCount, route.Generated, route.Uid)
 
 	return err
 }
@@ -217,7 +216,7 @@ func (c *Context) Del(name string) error {
 func (c *Context) GetAll() (map[string]Route, error) {
 	golinks := map[string]Route{}
 
-	rows, err := c.db.Query("SELECT * FROM $1", c.table_name)
+	rows, err := c.db.Query("SELECT * FROM " + c.table_name)
 	if err != nil {
 		return nil, err
 	}
