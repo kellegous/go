@@ -37,8 +37,17 @@ func hasCollision(ctx *context.Context, link string, uid string) (bool, error) {
 var nouns, adjectives []string
 
 func init() {
-	nouns = strings.Split("cat dog phoenix", " ")
-	adjectives = strings.Split("fuzzy large", " ")
+	b, err := nounsTxtBytes()
+	if err != nil {
+		panic(err)
+	}
+	nouns = strings.Split(string(b), "\n")
+
+	b, err = adjectivesTxtBytes()
+	if err != nil {
+		panic(err)
+	}
+	adjectives = strings.Split(string(b), "\n")
 }
 
 var randsource *rand.Rand
@@ -58,8 +67,23 @@ func generateLink(ctx *context.Context, uid string) (string, error) {
 	)
 
 	// Look for single-noun phrases that work
+	//for i := 0; i < NUM_ATTEMPTS; i++ {
+	//	link := nouns[randsource.Intn(len(nouns))]
+	//	collides, err := hasCollision(ctx, link, uid)
+	//	if err != nil {
+	//		return "", err
+	//	}
+	//
+	//	if !collides {
+	//		// We found something that works!
+	//		return link, nil
+	//	}
+	//}
+
+	// Look for adjective+noun phrases that work
 	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := nouns[randsource.Intn(len(nouns))]
+		link := fmt.Sprintf("%s%s",
+			adjectives[randsource.Intn(len(adjectives))], nouns[randsource.Intn(len(nouns))])
 		collides, err := hasCollision(ctx, link, uid)
 		if err != nil {
 			return "", err
@@ -71,10 +95,12 @@ func generateLink(ctx *context.Context, uid string) (string, error) {
 		}
 	}
 
-	// Look for adjective+noun phrases that work
+	// Look for adjective+adjective+noun phrases that work
 	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := fmt.Sprintf("%s%s",
-			adjectives[randsource.Intn(len(adjectives))], nouns[randsource.Intn(len(nouns))])
+		link := fmt.Sprintf("%s%s%s",
+			adjectives[randsource.Intn(len(adjectives))],
+			adjectives[randsource.Intn(len(adjectives))],
+			nouns[randsource.Intn(len(nouns))])
 		collides, err := hasCollision(ctx, link, uid)
 		if err != nil {
 			return "", err

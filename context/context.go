@@ -72,7 +72,6 @@ func (c *Context) DropTable() error {
 	if !strings.Contains(c.table_name, "test") {
 		return errors.New("This context does not appear to be a test context!")
 	} else {
-		fmt.Println("Dropping table", c.table_name)
 		return dropTable(c.db, c.table_name)
 	}
 }
@@ -126,7 +125,6 @@ func OpenTestCtx() (*Context, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer db.Exec("DROP TABLE " + table_name)
 
 	return &Context{
 		db:         db,

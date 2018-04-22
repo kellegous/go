@@ -28,7 +28,8 @@ func TestBlankGenerator(t *testing.T) {
 
 	randsource = rand.New(rand.NewSource(42))
 
-	desired := []string{"dog", "cat", "smallcat", "largecat", "largedog", "smalldog", "4", "3", "0", "6", "5", "7", "8", "1", "85", "20"}
+	desired := []string{"largedog", "smallcat", "largecat", "smalldog", "smallsmalldog", "largesmallcat", "largesmalldog", "smallsmallcat", "largelargecat", "smalllargedog", "largelargedog", "5", "smalllargecat", "7", "2", "6"}
+
 	var results []string
 
 	for i := range desired {
