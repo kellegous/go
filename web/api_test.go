@@ -3,7 +3,6 @@ package web
 import (
 	"bytes"
 	"database/sql"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -113,9 +112,10 @@ func (r *mockResponse) WriteHeader(status int) {
 }
 
 func mustBeSameNamedRoute(t *testing.T, a, b *routeWithName) {
-	if a.Name != b.Name || a.URL != b.URL || a.CreatedAt.UnixNano() != b.CreatedAt.UnixNano() {
+	if a.Name != b.Name || a.URL != b.URL {
 		t.Errorf("routes are not same: %v vs %v", a, b)
 	}
+	// TODO: Also check creation, modified, and deleted times
 }
 
 func mustBeRouteOf(t *testing.T, rt *context.Route, url string) {
@@ -327,41 +327,31 @@ func TestAPIPutThenGetAuto(t *testing.T) {
 	mustBeNamedRouteOf(t, bm.Route, am.Route.Name, "http://b.com/")
 }
 
-func getInPages(e *env, params url.Values) ([][]*routeWithName, error) {
-	var pages [][]*routeWithName
-
-	for {
-		res, err := e.get("/api/urls/?" + params.Encode())
-		if err != nil {
-			return nil, err
-		}
-
-		if res.status != http.StatusOK {
-			return nil, fmt.Errorf("HTTP status: %d", res.status)
-		}
-
-		var m msgRoutes
-		if err := json.NewDecoder(res).Decode(&m); err != nil {
-			return nil, err
-		}
-
-		if !m.Ok {
-			return nil, errors.New("response is not ok")
-		}
-
-		pages = append(pages, m.Routes)
-
-		if m.Next == "" {
-			return pages, nil
-		}
-
-		params.Set("cursor", m.Next)
+func getLinksTest(e *env, params url.Values) ([]*routeWithName, error) {
+	res, err := e.get("/api/urls/?" + params.Encode())
+	if err != nil {
+		return nil, err
 	}
+
+	if res.status != http.StatusOK {
+		return nil, fmt.Errorf("HTTP status: %d", res.status)
+	}
+
+	var m msgRoutes
+	if err := json.NewDecoder(res).Decode(&m); err != nil {
+		return nil, err
+	}
+
+	if !m.Ok {
+		return nil, errors.New("response is not ok")
+	}
+
+	return m.Routes, nil
 }
 
 type listTest struct {
 	Params url.Values
-	Pages  [][]*routeWithName
+	Pages  []*routeWithName
 }
 
 func TestAPIList(t *testing.T) {
@@ -428,110 +418,37 @@ func TestAPIList(t *testing.T) {
 	}
 
 	tests := []*listTest{
-		// TODO: Add these tests back, once generated name filtering works again.
 		{
 			Params: url.Values(map[string][]string{}),
-			Pages: [][]*routeWithName{
-				{rts[0], rts[1], rts[4], rts[5]},
-			},
+			Pages: []*routeWithName{
+				rts[0], rts[1], rts[4], rts[5]},
 		},
 		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"true"},
 			}),
-			Pages: [][]*routeWithName{rts},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"include-generated-names": {"false"},
-			}),
-			Pages: [][]*routeWithName{
-				{rts[0], rts[1], rts[4], rts[5]},
-			},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"limit": {"2"},
-			}),
-			Pages: [][]*routeWithName{
-				{rts[0], rts[1]},
-				{rts[4], rts[5]},
-			},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"limit":                   {"2"},
-				"include-generated-names": {"true"},
-			}),
-			Pages: [][]*routeWithName{
-				{rts[0], rts[1]},
-				{rts[2], rts[3]},
-				{rts[4], rts[5]},
-			},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"limit":  {"2"},
-				"cursor": {base64.URLEncoding.EncodeToString([]byte{':'})},
-			}),
-			Pages: [][]*routeWithName{
-				{rts[4], rts[5]},
-			},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"limit":                   {"3"},
-				"include-generated-names": {"true"},
-				"cursor":                  {base64.URLEncoding.EncodeToString([]byte{':'})},
-			}),
-			Pages: [][]*routeWithName{
-				{rts[2], rts[3], rts[4]},
-				{rts[5]},
-			},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"limit": {"1"},
-			}),
-			Pages: [][]*routeWithName{
-				{rts[0]},
-				{rts[1]},
-				{rts[4]},
-				{rts[5]},
-			},
-		},
-		{
-			Params: url.Values(map[string][]string{
-				"cursor": {base64.URLEncoding.EncodeToString([]byte{'z'})},
-			}),
-			Pages: [][]*routeWithName{nil},
+			Pages: rts,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("Test with ?%s", test.Params.Encode()),
 			func(t *testing.T) {
-				pages, err := getInPages(e, test.Params)
+				links, err := getLinksTest(e, test.Params)
 				if err != nil {
 					t.Fatal(err)
 				}
 
-				if len(pages) != len(test.Pages) {
-					t.Errorf("number of pages mismatch %d vs %d", len(pages), len(test.Pages))
+				expected := test.Pages
+
+				if len(links) != len(expected) {
+					t.Fatalf("length mismatch expected %d got %d", len(expected), len(links))
 				}
 
-				for i, n := 0, len(pages); i < n; i++ {
-					page := pages[i]
-					expected := test.Pages[i]
-
-					if len(page) != len(expected) {
-						t.Errorf("page %d, length mismatch expected %d got %d", i, len(expected), len(page))
-					}
-
-					for j, m := 0, len(page); j < m; j++ {
-						mustBeSameNamedRoute(t, page[j], expected[j])
-					}
+				for j, m := 0, len(links); j < m; j++ {
+					mustBeSameNamedRoute(t, links[j], expected[j])
 				}
+
 			})
 	}
 }
@@ -541,22 +458,6 @@ func TestBadList(t *testing.T) {
 	defer e.destroy(t)
 
 	tests := map[string]int{
-		url.Values{
-			"cursor": {"not a cursor"},
-		}.Encode(): http.StatusBadRequest,
-
-		url.Values{
-			"limit": {"0"},
-		}.Encode(): http.StatusBadRequest,
-
-		url.Values{
-			"limit": {"not a limit"},
-		}.Encode(): http.StatusBadRequest,
-
-		url.Values{
-			"limit": {"100000"},
-		}.Encode(): http.StatusBadRequest,
-
 		url.Values{
 			"include-generated-names": {"butter"},
 		}.Encode(): http.StatusBadRequest,

@@ -32,7 +32,6 @@ type msgRoute struct {
 type msgRoutes struct {
 	Ok     bool             `json:"ok"`
 	Routes []*routeWithName `json:"routes"`
-	Next   string           `json:"next"`
 }
 
 // Encode the given data to JSON and send it to the client.

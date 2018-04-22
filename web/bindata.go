@@ -330,15 +330,15 @@ func AssetNames() []string {
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
 	"adjectives.txt": adjectivesTxt,
-	"close.svg": closeSvg,
-	"edit.css": editCss,
-	"edit.html": editHtml,
-	"edit.js": editJs,
-	"favicon.ico": faviconIco,
-	"index.js": indexJs,
-	"links.css": linksCss,
-	"links.html": linksHtml,
-	"nouns.txt": nounsTxt,
+	"close.svg":      closeSvg,
+	"edit.css":       editCss,
+	"edit.html":      editHtml,
+	"edit.js":        editJs,
+	"favicon.ico":    faviconIco,
+	"index.js":       indexJs,
+	"links.css":      linksCss,
+	"links.html":     linksHtml,
+	"nouns.txt":      nounsTxt,
 }
 
 // AssetDir returns the file names below a certain
@@ -380,17 +380,18 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"adjectives.txt": &bintree{adjectivesTxt, map[string]*bintree{}},
-	"close.svg": &bintree{closeSvg, map[string]*bintree{}},
-	"edit.css": &bintree{editCss, map[string]*bintree{}},
-	"edit.html": &bintree{editHtml, map[string]*bintree{}},
-	"edit.js": &bintree{editJs, map[string]*bintree{}},
-	"favicon.ico": &bintree{faviconIco, map[string]*bintree{}},
-	"index.js": &bintree{indexJs, map[string]*bintree{}},
-	"links.css": &bintree{linksCss, map[string]*bintree{}},
-	"links.html": &bintree{linksHtml, map[string]*bintree{}},
-	"nouns.txt": &bintree{nounsTxt, map[string]*bintree{}},
+	"close.svg":      &bintree{closeSvg, map[string]*bintree{}},
+	"edit.css":       &bintree{editCss, map[string]*bintree{}},
+	"edit.html":      &bintree{editHtml, map[string]*bintree{}},
+	"edit.js":        &bintree{editJs, map[string]*bintree{}},
+	"favicon.ico":    &bintree{faviconIco, map[string]*bintree{}},
+	"index.js":       &bintree{indexJs, map[string]*bintree{}},
+	"links.css":      &bintree{linksCss, map[string]*bintree{}},
+	"links.html":     &bintree{linksHtml, map[string]*bintree{}},
+	"nouns.txt":      &bintree{nounsTxt, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
@@ -439,4 +440,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

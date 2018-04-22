@@ -1,13 +1,12 @@
 package web
 
 import (
-	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
+	"sort"
 	"strings"
 	"time"
 
@@ -161,27 +160,6 @@ func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) 
 	writeJSONOk(w)
 }
 
-func parseCursor(v string) ([]byte, error) {
-	if v == "" {
-		return nil, nil
-	}
-
-	return base32.StdEncoding.DecodeString(v)
-}
-
-func parseInt(v string, def int) (int, error) {
-	if v == "" {
-		return def, nil
-	}
-
-	i, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return int(i), nil
-}
-
 func parseBool(v string, def bool) (bool, error) {
 	if v == "" {
 		return def, nil
@@ -199,6 +177,44 @@ func parseBool(v string, def bool) (bool, error) {
 	return false, errors.New("invalid boolean value")
 }
 
+func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	ig, err := parseBool(r.FormValue("include-generated-names"), false)
+	if err != nil {
+		writeJSONError(w, "invalid include-generated-names value", http.StatusBadRequest)
+		return
+	}
+
+	res := msgRoutes{
+		Ok: true,
+	}
+
+	links, err := ctx.GetAll()
+	if err != nil {
+		writeJSONBackendError(w, err)
+	}
+
+	sortedNames := make([]string, 0, len(links))
+	for k := range links {
+		sortedNames = append(sortedNames, k)
+	}
+	sort.Strings(sortedNames)
+
+	for _, name := range sortedNames {
+		// if we should be ignoring generated links, skip over that range.
+		route := links[name]
+		if !ig && route.Generated {
+			continue
+		}
+
+		res.Routes = append(res.Routes, &routeWithName{
+			Name:  name,
+			Route: &route,
+		})
+	}
+
+	writeJSON(w, &res, http.StatusOK)
+}
+
 func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
@@ -212,9 +228,22 @@ func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func apiURLs(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		apiURLsGet(ctx, w, r)
+	default:
+		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
+	}
+}
+
 // Setup ...
 func Setup(m *http.ServeMux, ctx *context.Context) {
 	m.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
 		apiURL(ctx, w, r)
+	})
+
+	m.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
+		apiURLs(ctx, w, r)
 	})
 }
