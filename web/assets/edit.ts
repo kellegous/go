@@ -2,7 +2,7 @@
 /// <reference path="lib/types.ts" />
 /// <reference path="lib/xhr.ts" />
 
-namespace o {
+namespace go {
     // Get the OS-specific shortcut key for copying.
     var copyKey = () => navigator.userAgent.indexOf('Macintosh') >= 0
         ? '⌘-C'
@@ -195,11 +195,17 @@ namespace o {
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
 
-                if (status != 200) {
-                    return;
+                if (status == 200) {
+                    $route = msg.route;
+                } else {
+                    $route = <Route>{
+                        name: name,
+                        url: "",
+                        generated: false,
+                        modified_count: 0
+                    };
+                    $route.uid = Math.floor(Math.random() * (1<<31)).toString();
                 }
-
-                $route = msg.route;
 
                 $url.value = $route.url;
                 $url.focus();
