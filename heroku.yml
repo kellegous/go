@@ -5,4 +5,4 @@ build:
     - go
 
 run:
-  web: go-links
+  web: o-links

@@ -1,6 +1,6 @@
 .build
 data/
-go-links
+o-links
 
 *.sublime-project
 *.sublime-workspace

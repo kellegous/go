@@ -2,7 +2,7 @@
 /// <reference path="lib/types.ts" />
 /// <reference path="lib/xhr.ts" />
 
-namespace go {
+namespace o {
     // Get the OS-specific shortcut key for copying.
     var copyKey = () => navigator.userAgent.indexOf('Macintosh') >= 0
         ? '⌘-C'
