@@ -9,12 +9,15 @@
         rel="stylesheet">
 </head>
 <body>
+    <div class="links" style="text-align: center">
+        <a href="/edit/">Create an o/link</a>
+    </div>
     <div class="links">
         <h1>Active links</h1>
         <ul>
             {{ range $key, $route := . }}
             <li>
-                <a href="{{ $route.URL }}">o/{{ $key }}</a><br />
+                <a href="{{ $route.URL }}">o/{{ $key }}/</a><br />
                 <a href="{{ $route.URL }}" class="full-url">{{ $route.URL }}</a>
             </li>
             {{ end }}
