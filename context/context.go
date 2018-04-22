@@ -186,7 +186,7 @@ func (c *Context) Get(name string) (*Route, error) {
 //Edits the name and URL of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
 func (c *Context) Edit(route *Route, name string) error {
 	_, err := c.db.Exec("UPDATE "+c.table_name+" SET Url = $1, ModifiedAt = $2, Name = $3, ModifiedCount = $4, Generated=$5 WHERE Uid = $6",
-		route.URL, time.Now(), name, route.ModifiedCount, route.Generated, route.Uid)
+		route.URL, time.Now().In(time.UTC), name, route.ModifiedCount, route.Generated, route.Uid)
 
 	return err
 }
