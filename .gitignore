@@ -1,1 +1,10 @@
 .build
+data/
+o-links
+
+*.sublime-project
+*.sublime-workspace
+
+.idea
+
+env.local

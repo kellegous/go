@@ -17,17 +17,19 @@ namespace go {
     // Called with the window resizes.
     var windowDidResize = () => {
         var rect = $frm.getBoundingClientRect();
-        dom.css($frm, 'margin-top', (window.innerHeight/3 - rect.height/2) + 'px');
+        // Change the top margin of the form to put the middle of the form 
+        // at the 1/3rd point in the window.
+        dom.css($frm, 'margin-top', Math.max(50, (window.innerHeight/3 - rect.height/2)) + 'px');
     };
 
     // Called when the URL changes.
     var urlDidChange = () => {
         var url = ($url.value || '').trim();
-        if (url == lastUrl) {
+        if (url == $route.url) {
             return;
         }
 
-        lastUrl = url;
+        $route.url = url;
 
         hideDrawer();
         if (url) {
@@ -35,6 +37,21 @@ namespace go {
         } else {
             $cls.classList.remove('vis');
         }
+
+        postShortUrl(url, $shorturl.value);
+    };
+
+    var shortUrlDidChange = () => {
+        const shorturl = ($shorturl.value || '').trim();
+        if (shorturl == $route.name) {
+            return;
+        }
+
+        $route.name = shorturl;
+
+        $route.generated = false;
+
+        postShortUrl($url.value || '', shorturl);
     };
 
     var formDidSubmit = (e: Event) => {
@@ -43,29 +60,43 @@ namespace go {
         var name = nameFrom(location.pathname),
             url = ($url.value || '').trim();
 
-        xhr.post('/api/url/' + name)
-            .sendJSON({url: url})
+        postShortUrl(url, name);
+    };
+
+    var postShortUrl = (url: string, shorturl: string) => {
+        $route.name = shorturl;
+        $route.url = url;
+        $route.modified_count += 1;
+
+        xhr.post('/api/url/' + $route.name)
+            .sendJSON($route)
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
                 if (!msg.ok) {
                     showError(msg.error);
                     return;
                 }
+                console.log("Received response: ", msg);
 
                 var route = msg.route;
                 if (!route) {
-                    hideDrawer();
+                    // hideDrawer();
                     return;
                 }
 
-                var url = route.url || '',
-                    name = route.name || '';
-                if (url) {
-                    history.replaceState({}, null, '/edit/' + name);
-                    showLink(name);
+                if (route.modified_count >= $route.modified_count){
+                    $route = route;
+
+                    if ($route.url != $url.value && document.activeElement != $url){
+                        $url.value = $route.url;
+                    }
+
+                    showLink($route.name)
+                } else {
+                    console.log("Route rejected, perhaps network delay?")
                 }
             });
-    };
+    }
 
     var formDidClear = () => {
         var name = nameFrom(location.pathname),
@@ -105,25 +136,24 @@ namespace go {
     };
 
     var showLink = (name: string) => {
-        var lnk = location.origin + '/' + name;
+        console.log("Showing link:", name)
+        if (name){
+            dom.css($links, 'transform', 'scaleY(1)');
+        } else {
+            dom.css($links, 'transform', 'scaleY(0)');
+        }
 
-        $cmp.textContent = '';
-        $cmp.classList.remove('fuck');
-        $cmp.classList.add('link');
+        if (name != $shorturl.value && document.activeElement != $shorturl){
+            $shorturl.value = name;
+        }
 
-        var $a = dom.c('a');
-        $a.setAttribute('href', lnk);
-        $a.textContent = lnk;
-        $cmp.appendChild($a);
+        for (var echo of $echos) {
+            console.log(echo);
+            echo.innerText = name;
+        }
 
-        var $h = dom.c('span');
-        $h.classList.add('hnt');
-        $h.textContent = copyKey();
-        $cmp.appendChild($h);
-
-        dom.css($cmp, 'transform', 'scaleY(1)');
-
-        getSelection().setBaseAndExtent($a, 0, $a, 1);
+        history.replaceState({}, null, '/edit/' + name);
+        return;
     };
 
     // Called when the app loads initially.
@@ -136,36 +166,66 @@ namespace go {
         $url.addEventListener('paste', urlDidChange, false);
         $url.addEventListener('change', urlDidChange, false);
 
+        $shorturl.addEventListener('keyup', shortUrlDidChange, false);
+        $shorturl.addEventListener('paste', shortUrlDidChange, false);
+        $shorturl.addEventListener('change', shortUrlDidChange, false);
+
         $cls.addEventListener('click', formDidClear, false);
 
         var name = nameFrom(location.pathname);
+        showLink(name);
         if (!name) {
+            // We are making a new link
             $url.focus();
+            $route = <Route>{
+                name: "",
+                url: "",
+                generated: false,
+                modified_count: 0
+            };
+            $route.uid = Math.floor(Math.random() * (1<<31)).toString();
+            $inited = true;
             return;
         }
+
+        $shorturl.value = name;
 
         xhr.get('/api/url/' + name)
             .send()
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
 
-                if (status != 200) {
-                    return;
+                if (status == 200) {
+                    $route = msg.route;
+                } else {
+                    $route = <Route>{
+                        name: name,
+                        url: "",
+                        generated: false,
+                        modified_count: 0
+                    };
+                    $route.uid = Math.floor(Math.random() * (1<<31)).toString();
                 }
 
-                // TODO(knorton): Hanlde things.
-                var url = msg.route.url || '';
-                $url.value = url;
+                $url.value = $route.url;
                 $url.focus();
                 urlDidChange();
+                $inited = true;
             });
     };
 
     var $frm = <HTMLFormElement>dom.q('form'),
         $cmp = dom.q('#cmp'),
+        $links = dom.q('#links'),
         $cls = dom.q('#cls'),
         $url = <HTMLInputElement>dom.q('#url'),
-        lastUrl: string;
+        $shorturl = <HTMLInputElement>dom.q('#shorturl'),
+        $echos = <Array<HTMLElement>>Array.prototype.slice.call(document.getElementsByClassName("echo")),
+        $uid: string,
+        // This object stores the latest route available, with the data type as defined on the server.
+        // It is null if the app has not yet initialized.
+        $route: Route,
+        $inited: boolean = false;
 
     appDidLoad();
 }

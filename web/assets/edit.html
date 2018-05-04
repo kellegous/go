@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Go</title>
+    <title>O Links Editor</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <link href="/s/edit.css"
         rel="stylesheet"
@@ -14,7 +14,20 @@
     <form autocomplete="off">
       <div id="bar">
         <div id="cls"></div>
-        <input type="text" id="url" placeholder="Enter the url to shorten"></input>
+        <input type="text" class="field" id="url" placeholder="Enter the url to shorten"></input>
+
+        <div class="spacer"></div>
+
+        <input type="text" class="field shorturl" id="shorturl" placeholder="Desired Shortened URL"></input>
+
+
+        <div id="links">
+          <span class="hint">From OLIN (or the internal network):</span><br>
+          o/<span class="shorturl echo">...</span>/
+          <br>
+          <span class="hint">From OLIN_GUEST (or the internet):</span><br>
+          o.olin.build/<span class="shorturl echo">...</span>/
+        </div>
       </div>
       <div id="cmp"></div>
     </form>

@@ -3,7 +3,7 @@ package web
 import (
 	"net/http"
 
-	"github.com/kellegous/go/context"
+	"github.com/HALtheWise/o-links/context"
 )
 
 type adminHandler struct {
@@ -19,11 +19,11 @@ func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if p == "dumps" {
-		if golinks, err := ctx.GetAll(); err != nil {
+		if links, err := ctx.GetAll(); err != nil {
 			writeJSONBackendError(w, err)
 			return
 		} else {
-			writeJSON(w, golinks, http.StatusOK)
+			writeJSON(w, links, http.StatusOK)
 		}
 	}
 

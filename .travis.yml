@@ -1,0 +1,39 @@
+language: go
+go: 
+ - 1.x
+ - master
+
+services:
+  - postgresql
+
+matrix:
+  # It's ok if our code fails on unstable development versions of Go.
+  allow_failures:
+    - go: master
+  # Don't wait for tip tests to finish. Mark the test run green if the
+  # tests pass on the stable versions of Go.
+  fast_finish: true
+
+cache:
+  directories:
+   - .build
+
+before-install:
+ - nvm install 8
+
+install:
+ - gem install sass
+ - npm install -g typescript
+ - sudo apt install closure-compiler
+ - go get ./...
+ - make
+
+before_script:
+  - GO_FILES=$(find . -iname '*.go' -type f | grep -v '/.build/\|/vendor/\|/web/bindata.go') # All the .go files, excluding vendor/ and .build/
+  - psql -c 'create database travis;' -U postgres
+
+script:
+ - echo "$GO_FILES" && echo "||||" && echo "$(gofmt -l $GO_FILES)"
+ - test -z "$(gofmt -l $GO_FILES)"       # Fail if a .go file hasn't been formatted with gofmt
+ - go vet ./...                             # go vet is the official Go static analyzer
+ - go test -v ./...

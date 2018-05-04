@@ -1,222 +1,236 @@
 package context
 
 import (
-	"bytes"
-	"encoding/binary"
-	"io"
-	"io/ioutil"
+	"fmt"
+	"math/rand"
+	"strings"
+
 	"os"
-	"path/filepath"
-	"sync"
 	"time"
 
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/util"
+	"database/sql"
+	"errors"
+
+	_ "github.com/lib/pq"
 )
 
-const (
-	routesDbFilename = "routes.db"
-	idLogFilename    = "id"
-)
+/*NOTES: List method removed because refactoring /api/urls/ seems to be the most work for least reward*/
+
+const TABLE_NAME = "linkdata"
 
 // Route is the value part of a shortcut.
 type Route struct {
-	URL  string    `json:"url"`
-	Time time.Time `json:"time"`
+	URL           string    `json:"url"`
+	CreatedAt     time.Time `json:"created_at"`
+	ModifiedAt    time.Time `json:"modified_at"`
+	DeletedAt     time.Time `json:"deleted_at"`
+	Uid           string    `json:"uid"`
+	Generated     bool      `json:"generated"`
+	ModifiedCount int       `json:"modified_count"`
+	/*A field declaration may be followed by an optional string literal tag, which becomes an attribute for all the fields in the corresponding field declaration.
+	  The tags are made visible through a reflection interface and take part in type identity for structs but are otherwise ignored...*/
 }
 
-// Serialize this Route into the given Writer.
-func (o *Route) write(w io.Writer) error {
-	if err := binary.Write(w, binary.LittleEndian, o.Time.UnixNano()); err != nil {
-		return err
+/*Refactor to return a name as well, probably. We may need a different version that takes sql.Rows instead of sql.Row .*/
+
+// Takes a Rows object returned from a database query, repackages it into a Route, and returns that plus a name.
+// for rows.Next() { rt = rowToRoute(rows) } should be the proper usage, I think.
+func rowToRoute(r *sql.Rows) (*Route, string, error) {
+	var URL string
+	var CreatedAt time.Time
+	var ModifiedAt time.Time
+	var DeletedAt time.Time
+	var Uid string
+	var Generated bool
+	var Name string
+	var ModifiedCount int
+
+	if err := r.Scan(&URL, &CreatedAt, &ModifiedAt, &DeletedAt, &Uid, &Generated, &Name, &ModifiedCount); err != nil {
+		/*Scan's destinations have to be in the same order as the columns in the schema*/
+		return nil, "", err
 	}
 
-	if _, err := w.Write([]byte(o.URL)); err != nil {
-		return err
-	}
+	rt := &Route{URL: URL, CreatedAt: CreatedAt, ModifiedAt: ModifiedAt, DeletedAt: DeletedAt, Uid: Uid, Generated: Generated, ModifiedCount: ModifiedCount}
 
-	return nil
+	return rt, Name, nil
 }
 
-// Deserialize this Route from the given Reader.
-func (o *Route) read(r io.Reader) error {
-	var t int64
-	if err := binary.Read(r, binary.LittleEndian, &t); err != nil {
-		return err
-	}
+func createTableIfNotExist(db *sql.DB, name string) error {
+	// if a table called name does not exist, set it up
+	queryString := "CREATE TABLE IF NOT EXISTS " + name + " (URL varchar(500) NOT NULL, CreatedAt timestamp NOT NULL, ModifiedAt timestamp, DeletedAt timestamp, Uid varchar(100) PRIMARY KEY, Generated boolean NOT NULL, Name varchar(100) NOT NULL, ModifiedCount int NOT NULL)"
+	_, err := db.Exec(queryString)
 
-	b, err := ioutil.ReadAll(r)
-	if err != nil {
-		return err
-	}
-
-	o.URL = string(b)
-	o.Time = time.Unix(0, t)
-	return nil
+	return err
 }
 
-// Context provides access to the data store.
-type Context struct {
-	path string
-	db   *leveldb.DB
-	lck  sync.Mutex
-	id   uint64
+func dropTable(db *sql.DB, name string) error {
+	_, err := db.Exec("DROP TABLE " + name)
+	return err
 }
 
-// Commit the given ID to the data store.
-func commit(filename string, id uint64) error {
-	w, err := os.Create(filename)
-	if err != nil {
-		return err
+func (c *Context) DropTable() error {
+	if !strings.Contains(c.table_name, "test") {
+		return errors.New("This context does not appear to be a test context!")
+	} else {
+		return dropTable(c.db, c.table_name)
 	}
-	defer w.Close()
-
-	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
-		return err
-	}
-
-	return w.Sync()
 }
 
-// Load the current ID from the data store.
-func load(filename string) (uint64, error) {
-	if _, err := os.Stat(filename); err != nil {
-		return 0, commit(filename, 0)
-	}
-
-	r, err := os.Open(filename)
-	if err != nil {
-		return 0, err
-	}
-	defer r.Close()
-
-	var id uint64
-	if err := binary.Read(r, binary.LittleEndian, &id); err != nil {
-		return 0, err
-	}
-
-	return id, nil
-}
-
-// Open the context using path as the data store location.
-func Open(path string) (*Context, error) {
-	if _, err := os.Stat(path); err != nil {
-		if err := os.MkdirAll(path, os.ModePerm); err != nil {
-			return nil, err
-		}
-	}
-
-	// open the database
-	db, err := leveldb.OpenFile(filepath.Join(path, routesDbFilename), nil)
+// Creates a Context that contains a sql.DB (postgres database) and returns a pointer to said context.
+func Open() (*Context, error) {
+	// open the database and return db, a pointer to the sql.DB object
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		return nil, err
 	}
 
-	id, err := load(filepath.Join(path, idLogFilename))
+	// ping the database
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	if os.Getenv("DROPTABLE_EACH_LAUNCH") == "yes" { /*Turn this off once we're ready to launch*/
+		err = dropTable(db, TABLE_NAME)
+	}
+
+	err = createTableIfNotExist(db, TABLE_NAME)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Context{
-		path: path,
-		db:   db,
-		id:   id,
+		table_name: TABLE_NAME,
+		db:         db,
 	}, nil
 }
 
-// Close the resources associated with this context.
-func (c *Context) Close() error {
-	return c.db.Close()
-}
+func OpenTestCtx() (*Context, error) {
+	// open the database and return db, a pointer to the sql.DB object
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 
-// Get retreives a shortcut from the data store.
-func (c *Context) Get(name string) (*Route, error) {
-	val, err := c.db.Get([]byte(name), nil)
 	if err != nil {
 		return nil, err
 	}
 
-	rt := &Route{}
-	if err := rt.read(bytes.NewBuffer(val)); err != nil {
+	// ping the database
+	err = db.Ping()
+	if err != nil {
 		return nil, err
 	}
 
-	return rt, nil
-}
+	table_name := fmt.Sprintf("olinks_test_%v", rand.Uint64())
 
-// Put stores a new shortcut in the data store.
-func (c *Context) Put(key string, rt *Route) error {
-	var buf bytes.Buffer
-	if err := rt.write(&buf); err != nil {
-		return err
+	err = createTableIfNotExist(db, table_name)
+	if err != nil {
+		return nil, err
 	}
 
-	return c.db.Put([]byte(key), buf.Bytes(), &opt.WriteOptions{Sync: true})
+	return &Context{
+		db:         db,
+		table_name: table_name,
+	}, nil
+}
+
+// Context provides access to the database.
+type Context struct {
+	db         *sql.DB
+	table_name string
+}
+
+// Close the database associated with this context.
+func (c *Context) Close() error {
+	return c.db.Close()
+}
+
+// GetUid retreives a single shortcut matching 'id' from the data store.
+func (c *Context) GetUid(uid string) (*Route, error) {
+	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
+	rows, err := c.db.Query("SELECT * FROM "+c.table_name+" WHERE Uid = $1", uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rt, _, err := rowToRoute(rows)
+		if err != nil {
+			return nil, err
+		}
+		return rt, nil
+	}
+	return nil, sql.ErrNoRows
+}
+
+// Get retreives a single shortcut matching 'name' from the data store.
+func (c *Context) Get(name string) (*Route, error) {
+	// the row returned from the database should have the same number of fields (with the same names) as the fields in the definition of the Route object.
+	rows, err := c.db.Query("SELECT * FROM "+c.table_name+" WHERE Name = $1", name)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		rt, _, err := rowToRoute(rows)
+		if err != nil {
+			return nil, err
+		}
+		return rt, nil
+	}
+	return nil, sql.ErrNoRows
+}
+
+//Edits the name and URL of a row and updates the ModifiedAt timestamp accordingly. Might want to generalize in the future.
+func (c *Context) Edit(route *Route, name string) error {
+	_, err := c.db.Exec("UPDATE "+c.table_name+" SET Url = $1, ModifiedAt = $2, Name = $3, ModifiedCount = $4, Generated=$5 WHERE Uid = $6",
+		route.URL, time.Now().In(time.UTC), name, route.ModifiedCount, route.Generated, route.Uid)
+
+	return err
+}
+
+// Put creates a new row from a route and a name and inserts it into the database.
+/*
+What if someone wants to edit an existing row by name?
+Should we check that in api/apiUrlPost (which currently generates a new Route and calls ctx.Put) or here?
+Probably we should have a different method here like Edit, just so these are easy to handle.
+*/
+func (c *Context) Put(name string, rt *Route) error {
+	_, err := c.db.Exec("INSERT INTO "+c.table_name+" VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+		rt.URL, rt.CreatedAt.In(time.UTC), rt.ModifiedAt.In(time.UTC), rt.DeletedAt.In(time.UTC), rt.Uid, rt.Generated, name, rt.ModifiedCount)
+
+	return err
 }
 
 // Del removes an existing shortcut from the data store.
-func (c *Context) Del(key string) error {
-	return c.db.Delete([]byte(key), &opt.WriteOptions{Sync: true})
-}
+func (c *Context) Del(name string) error {
 
-// List all routes in an iterator, starting with the key prefix of start (which can also be nil).
-func (c *Context) List(start []byte) *Iter {
-	return &Iter{
-		it: c.db.NewIterator(&util.Range{
-			Start: start,
-			Limit: nil,
-		}, nil),
-	}
+	_, err := c.db.Exec("DELETE FROM "+c.table_name+" WHERE Name = $1", name)
+
+	return err
 }
 
 // GetAll gets everything in the db to dump it out for backup purposes
 func (c *Context) GetAll() (map[string]Route, error) {
 	golinks := map[string]Route{}
-	iter := c.db.NewIterator(nil, nil)
-	defer iter.Release()
 
-	for iter.Next() {
-		key := iter.Key()
-		val := iter.Value()
-		rt := &Route{}
-		if err := rt.read(bytes.NewBuffer(val)); err != nil {
-			return nil, err
-		}
-		golinks[string(key[:])] = *rt
-	}
-
-	if err := iter.Error(); err != nil {
+	rows, err := c.db.Query("SELECT * FROM " + c.table_name)
+	if err != nil {
 		return nil, err
 	}
 
+	defer rows.Close()
+
+	for rows.Next() {
+		rt, rowName, err := rowToRoute(rows)
+
+		if err != nil {
+			return nil, err
+		}
+
+		golinks[rowName] = *rt
+
+	}
+
 	return golinks, nil
-}
-
-func (c *Context) commit(id uint64) error {
-	w, err := os.Create(filepath.Join(c.path, idLogFilename))
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
-		return err
-	}
-
-	return w.Sync()
-}
-
-// NextID generates the next numeric ID to be used for an auto-named shortcut.
-func (c *Context) NextID() (uint64, error) {
-	c.lck.Lock()
-	defer c.lck.Unlock()
-
-	c.id++
-
-	if err := commit(filepath.Join(c.path, idLogFilename), c.id); err != nil {
-		return 0, err
-	}
-
-	return c.id, nil
 }

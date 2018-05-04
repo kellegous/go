@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -29,7 +30,7 @@ type goData struct {
 func main() {
 	c := config{}
 	flag.StringVar(&c.host, "host", "localhost", "host to post data to")
-	flag.StringVar(&c.port, "port", "8067", "port on host to talk to")
+	flag.StringVar(&c.port, "port", os.Getenv("PORT"), "port on host to talk to")
 	flag.StringVar(&c.dumpFile, "file", "", "dump file to load from")
 	flag.Parse()
 

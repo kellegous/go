@@ -1,17 +1,19 @@
 package web
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
+	"sort"
 	"strings"
 	"time"
 
-	"github.com/kellegous/go/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	"database/sql"
+
+	"github.com/HALtheWise/o-links/context"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -19,66 +21,47 @@ const (
 )
 
 var (
-	errInvalidURL        = errors.New("Invalid URL")
-	errRedirectLoop      = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
-	genURLPrefix    byte = ':'
-	postGenCursor        = []byte{genURLPrefix + 1}
+	errInvalidURL   = errors.New("Invalid URL")
+	errRedirectLoop = errors.New(" I'm sorry, Dave. I'm afraid I can't do that." +
+		"Recursive links are not currently supported.")
 )
 
-// A very simple encoding of numeric ids. This is simply a base62 encoding
-// prefixed with ":"
-func encodeID(id uint64) string {
-	n := uint64(len(alpha))
-	b := make([]byte, 0, 8)
-	if id == 0 {
-		return "0"
-	}
-
-	b = append(b, genURLPrefix)
-
-	for id > 0 {
-		b = append(b, alpha[id%n])
-		id /= n
-	}
-
-	return string(b)
-}
-
-// Advance to the next contetxt id and encode it as an ID.
-func nextEncodedID(ctx *context.Context) (string, error) {
-	id, err := ctx.NextID()
-	if err != nil {
-		return "", err
-	}
-	return encodeID(id), nil
-}
-
 // Check that the given URL is suitable as a shortcut link.
-func validateURL(r *http.Request, s string) error {
+func validateURL(r *http.Request, s string) (string, error) {
 	u, err := url.Parse(s)
 	if err != nil {
-		return errInvalidURL
+		return "", errInvalidURL
+	}
+
+	if u.Host == "" && u.Path == "" {
+		return "", errInvalidURL
 	}
 
 	switch u.Scheme {
+	case "":
+		u.Scheme = "http"
+		break
 	case "http", "https", "mailto", "ftp":
 		break
 	default:
-		return errInvalidURL
+		return "", errInvalidURL
 	}
 
 	if r.Host == u.Host {
-		return errRedirectLoop
+		return "", errRedirectLoop
 	}
 
-	return nil
+	return u.String(), nil
 }
 
+/*What if someone wants to edit an existing row by name? We need to check with ctx.Get() and then edit with a ctx.Edit() method*/
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
-
+	name := parseName("/api/url/", r.URL.Path)
 	var req struct {
-		URL string `json:"url"`
+		URL           string `json:"url"`
+		Uid           string `json:"uid"`
+		Generated     bool   `json:"generated"`
+		ModifiedCount int    `json:"modified_count"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -91,49 +74,65 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isBannedName(p) {
-		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
-		return
+	if req.Uid == "" {
+		req.Uid = fmt.Sprint(randsource.Uint32())
 	}
 
-	if err := validateURL(r, req.URL); err != nil {
-		writeJSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// If no name is specified, an ID must be generate.
-	if p == "" {
+	// If no path is specified, a path must be generated.
+	if name == "" {
 		var err error
-		p, err = nextEncodedID(ctx)
+		name, err = generateLink(ctx, req.Uid)
 		if err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
+
+		req.Generated = true
+	}
+
+	name, err := normalizeName(name)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
+	}
+
+	reqURL, err := validateURL(r, req.URL)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	rt := context.Route{
-		URL:  req.URL,
-		Time: time.Now(),
+		URL:           reqURL,
+		CreatedAt:     time.Now(),
+		Uid:           req.Uid,
+		Generated:     req.Generated,
+		ModifiedCount: req.ModifiedCount,
 	}
 
-	if err := ctx.Put(p, &rt); err != nil {
-		writeJSONBackendError(w, err)
-		return
+	// If a row with the name already exists, ctx.Get won't return an error. We then call ctx.Edit() instead.
+	if _, err := ctx.GetUid(rt.Uid); err == nil {
+		if err := ctx.Edit(&rt, name); err != nil {
+			writeJSONBackendError(w, err)
+			return
+		}
+	} else {
+		if err := ctx.Put(name, &rt); err != nil {
+			writeJSONBackendError(w, err)
+			return
+		}
 	}
-
-	writeJSONRoute(w, p, &rt)
+	writeJSONRoute(w, name, &rt)
 }
 
 func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
-
-	if p == "" {
-		writeJSONError(w, "no name given", http.StatusBadRequest)
+	name, err := normalizeName(parseName("/api/url/", r.URL.Path))
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rt, err := ctx.Get(p)
-	if err == leveldb.ErrNotFound {
+	rt, err := ctx.Get(name)
+	if err == sql.ErrNoRows {
 		writeJSONError(w, "Not Found", http.StatusNotFound)
 		return
 	} else if err != nil {
@@ -141,44 +140,22 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSONRoute(w, p, rt)
+	writeJSONRoute(w, name, rt)
 }
 
 func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
-
-	if p == "" {
-		writeJSONError(w, "name required", http.StatusBadRequest)
+	name, err := normalizeName(parseName("/api/url/", r.URL.Path))
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := ctx.Del(p); err != nil {
+	if err := ctx.Del(name); err != nil {
 		writeJSONBackendError(w, err)
 		return
 	}
 
 	writeJSONOk(w)
-}
-
-func parseCursor(v string) ([]byte, error) {
-	if v == "" {
-		return nil, nil
-	}
-
-	return base64.URLEncoding.DecodeString(v)
-}
-
-func parseInt(v string, def int) (int, error) {
-	if v == "" {
-		return def, nil
-	}
-
-	i, err := strconv.ParseInt(v, 10, 64)
-	if err != nil {
-		return 0, err
-	}
-
-	return int(i), nil
 }
 
 func parseBool(v string, def bool) (bool, error) {
@@ -199,18 +176,6 @@ func parseBool(v string, def bool) (bool, error) {
 }
 
 func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	c, err := parseCursor(r.FormValue("cursor"))
-	if err != nil {
-		writeJSONError(w, "invalid cursor value", http.StatusBadRequest)
-		return
-	}
-
-	lim, err := parseInt(r.FormValue("limit"), 100)
-	if err != nil || lim <= 0 || lim > 10000 {
-		writeJSONError(w, "invalid limit value", http.StatusBadRequest)
-		return
-	}
-
 	ig, err := parseBool(r.FormValue("include-generated-names"), false)
 	if err != nil {
 		writeJSONError(w, "invalid include-generated-names value", http.StatusBadRequest)
@@ -221,35 +186,28 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		Ok: true,
 	}
 
-	iter := ctx.List(c)
-	defer iter.Release()
+	links, err := ctx.GetAll()
+	if err != nil {
+		writeJSONBackendError(w, err)
+	}
 
-	for iter.Next() {
+	sortedNames := make([]string, 0, len(links))
+	for k := range links {
+		sortedNames = append(sortedNames, k)
+	}
+	sort.Strings(sortedNames)
+
+	for _, name := range sortedNames {
 		// if we should be ignoring generated links, skip over that range.
-		if !ig && isGenerated(iter.Name()) {
-			iter.Seek(postGenCursor)
-			if !iter.Valid() {
-				break
-			}
+		route := links[name]
+		if !ig && route.Generated {
+			continue
 		}
 
 		res.Routes = append(res.Routes, &routeWithName{
-			Name:  iter.Name(),
-			Route: iter.Route(),
+			Name:  name,
+			Route: &route,
 		})
-
-		if len(res.Routes) == lim {
-			break
-		}
-	}
-
-	if iter.Next() {
-		res.Next = base64.URLEncoding.EncodeToString([]byte(iter.Name()))
-	}
-
-	if err := iter.Error(); err != nil {
-		writeJSONBackendError(w, err)
-		return
 	}
 
 	writeJSON(w, &res, http.StatusOK)

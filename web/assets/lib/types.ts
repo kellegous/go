@@ -1,7 +1,12 @@
 interface Route {
 	name: string;
 	url: string;
-	time: string;
+	uid: string;
+    created_at: string;
+    modified_at: string;
+    deleted_at: string;
+	generated: boolean;
+	modified_count: number;
 }
 
 interface Msg {

@@ -7,8 +7,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kellegous/go/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/HALtheWise/o-links/context"
+
+	"database/sql"
+
+	_ "github.com/lib/pq"
 )
 
 // Serve a bundled asset over HTTP.
@@ -41,21 +44,28 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
 func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/", r.URL.Path)
-	if p == "" {
+	name := parseName("/", r.URL.Path)
+	if name == "" {
 		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	rt, err := ctx.Get(p)
-	if err == leveldb.ErrNotFound {
+	name, err := normalizeName(name)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
+	}
+
+	rt, err := ctx.Get(name)
+	if err == sql.ErrNoRows {
 		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", cleanName(p)),
+			fmt.Sprintf("/edit/%s", cleanName(name)),
 			http.StatusTemporaryRedirect)
 		return
 	} else if err != nil {
 		log.Panic(err)
 	}
+
+	fmt.Println(fmt.Sprintf("This is the address the database pulled out: %s", rt.URL))
 
 	http.Redirect(w, r,
 		rt.URL,
@@ -87,9 +97,11 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
 		apiURL(ctx, w, r)
 	})
-	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(ctx, w, r)
-	})
+
+	/*Taking this one out since it's the most work for the least reward*/
+	// mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
+	// 	apiURLs(ctx, w, r)
+	// })
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		getDefault(ctx, w, r)
 	})
@@ -102,13 +114,16 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 			return
 		}
 
-		serveAsset(w, r, "edit.html")
+		serveAsset(w, r, "edit.html") //apparently this is like a redirect?
 	})
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
 		getLinks(ctx, w, r)
 	})
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
+	})
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		serveAsset(w, r, "favicon.ico")
 	})
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)

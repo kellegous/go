@@ -2,21 +2,18 @@ package web
 
 import (
 	"bytes"
-	"encoding/base64"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/kellegous/go/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/HALtheWise/o-links/context"
 )
 
 type urlReq struct {
@@ -25,12 +22,18 @@ type urlReq struct {
 
 type env struct {
 	mux *http.ServeMux
-	dir string
 	ctx *context.Context
 }
 
-func (e *env) destroy() {
-	os.RemoveAll(e.dir)
+func (e *env) destroy(t *testing.T) {
+	err := e.ctx.DropTable()
+	if err != nil {
+		t.Errorf("Unable to drop table: %v", err)
+	}
+	e.ctx.Close()
+	if err != nil {
+		t.Errorf("Unable to close database: %v", err)
+	}
 }
 
 func (e *env) get(path string) (*mockResponse, error) {
@@ -71,14 +74,8 @@ func (e *env) call(method, path string, body io.Reader) (*mockResponse, error) {
 }
 
 func newEnv() (*env, error) {
-	dir, err := ioutil.TempDir("", "")
+	ctx, err := context.OpenTestCtx()
 	if err != nil {
-		return nil, err
-	}
-
-	ctx, err := context.Open(filepath.Join(dir, "data"))
-	if err != nil {
-		os.RemoveAll(dir)
 		return nil, err
 	}
 
@@ -88,7 +85,6 @@ func newEnv() (*env, error) {
 
 	return &env{
 		mux: mux,
-		dir: dir,
 		ctx: ctx,
 	}, nil
 }
@@ -116,9 +112,10 @@ func (r *mockResponse) WriteHeader(status int) {
 }
 
 func mustBeSameNamedRoute(t *testing.T, a, b *routeWithName) {
-	if a.Name != b.Name || a.URL != b.URL || a.Time.UnixNano() != b.Time.UnixNano() {
-		t.Fatalf("routes are not same: %v vs %v", a, b)
+	if a.Name != b.Name || a.URL != b.URL {
+		t.Errorf("routes are not same: %v vs %v", a, b)
 	}
+	// TODO: Also check creation, modified, and deleted times
 }
 
 func mustBeRouteOf(t *testing.T, rt *context.Route, url string) {
@@ -130,7 +127,7 @@ func mustBeRouteOf(t *testing.T, rt *context.Route, url string) {
 		t.Fatalf("expected url of %s, got %s", url, rt.URL)
 	}
 
-	if rt.Time.IsZero() {
+	if rt.CreatedAt.IsZero() {
 		t.Fatal("route time is empty")
 	}
 }
@@ -166,7 +163,7 @@ func mustHaveStatus(t *testing.T, res *mockResponse, status int) {
 
 func TestAPIGetNotFound(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	names := map[string]int{
 		"":              http.StatusBadRequest,
@@ -193,7 +190,7 @@ func TestAPIGetNotFound(t *testing.T) {
 
 func TestAPIPutThenGet(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	res, err := e.post("/api/url/xxx", &urlReq{
 		URL: "http://ex.com/",
@@ -230,7 +227,7 @@ func TestAPIPutThenGet(t *testing.T) {
 
 func TestBadPuts(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	var m msgErr
 
@@ -270,11 +267,11 @@ func TestBadPuts(t *testing.T) {
 
 func TestAPIDel(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	if err := e.ctx.Put("xxx", &context.Route{
-		URL:  "http://ex.com/",
-		Time: time.Now(),
+		URL:       "http://ex.com/",
+		CreatedAt: time.Now(),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -292,14 +289,14 @@ func TestAPIDel(t *testing.T) {
 	}
 	mustBeOk(t, m.Ok)
 
-	if _, err := e.ctx.Get("xxx"); err != leveldb.ErrNotFound {
+	if _, err := e.ctx.Get("xxx"); err != sql.ErrNoRows {
 		t.Fatal("expected xxx to be deleted")
 	}
 }
 
 func TestAPIPutThenGetAuto(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	res, err := e.post("/api/url/", &urlReq{URL: "http://b.com/"})
 	if err != nil {
@@ -330,230 +327,137 @@ func TestAPIPutThenGetAuto(t *testing.T) {
 	mustBeNamedRouteOf(t, bm.Route, am.Route.Name, "http://b.com/")
 }
 
-func getInPages(e *env, params url.Values) ([][]*routeWithName, error) {
-	var pages [][]*routeWithName
-
-	for {
-		res, err := e.get("/api/urls/?" + params.Encode())
-		if err != nil {
-			return nil, err
-		}
-
-		if res.status != http.StatusOK {
-			return nil, fmt.Errorf("HTTP status: %d", res.status)
-		}
-
-		var m msgRoutes
-		if err := json.NewDecoder(res).Decode(&m); err != nil {
-			return nil, err
-		}
-
-		if !m.Ok {
-			return nil, errors.New("response is not ok")
-		}
-
-		pages = append(pages, m.Routes)
-
-		if m.Next == "" {
-			return pages, nil
-		}
-
-		params.Set("cursor", m.Next)
+func getLinksTest(e *env, params url.Values) ([]*routeWithName, error) {
+	res, err := e.get("/api/urls/?" + params.Encode())
+	if err != nil {
+		return nil, err
 	}
+
+	if res.status != http.StatusOK {
+		return nil, fmt.Errorf("HTTP status: %d", res.status)
+	}
+
+	var m msgRoutes
+	if err := json.NewDecoder(res).Decode(&m); err != nil {
+		return nil, err
+	}
+
+	if !m.Ok {
+		return nil, errors.New("response is not ok")
+	}
+
+	return m.Routes, nil
 }
 
 type listTest struct {
 	Params url.Values
-	Pages  [][]*routeWithName
+	Pages  []*routeWithName
 }
 
 func TestAPIList(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	rts := []*routeWithName{
-		&routeWithName{
+		{
 			Name: "0",
 			Route: &context.Route{
-				URL:  "http://0.com/",
-				Time: time.Now(),
+				URL:       "http://0.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "1",
 			Route: &context.Route{
-				URL:  "http://1.com/",
-				Time: time.Now(),
+				URL:       "http://1.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 
-		&routeWithName{
-			Name: ":a",
+		{
+			Name: ":cat",
 			Route: &context.Route{
-				URL:  "http://ga.com/",
-				Time: time.Now(),
+				URL:       "http://cat.com/",
+				CreatedAt: time.Now(),
+				Generated: true,
 			},
 		},
 
-		&routeWithName{
-			Name: ":b",
+		{
+			Name: "_dog",
 			Route: &context.Route{
-				URL:  "http://gb.com/",
-				Time: time.Now(),
+				URL:       "http://dog.com/",
+				CreatedAt: time.Now(),
+				Generated: true,
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "a",
 			Route: &context.Route{
-				URL:  "http://a.com/",
-				Time: time.Now(),
+				URL:       "http://a.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "b",
 			Route: &context.Route{
-				URL:  "http://b.com/",
-				Time: time.Now(),
+				URL:       "http://b.com/",
+				CreatedAt: time.Now(),
 			},
 		},
 	}
 
 	for _, rt := range rts {
+		rt.Uid = fmt.Sprint(rand.Uint64())
 		if err := e.ctx.Put(rt.Name, rt.Route); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	tests := []*listTest{
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1], rts[4], rts[5]},
-			},
+			Pages: []*routeWithName{
+				rts[0], rts[1], rts[4], rts[5]},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"true"},
 			}),
-			Pages: [][]*routeWithName{rts},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"include-generated-names": {"false"},
-			}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1], rts[4], rts[5]},
-			},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"limit": {"2"},
-			}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1]},
-				[]*routeWithName{rts[4], rts[5]},
-			},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"limit":                   {"2"},
-				"include-generated-names": {"true"},
-			}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1]},
-				[]*routeWithName{rts[2], rts[3]},
-				[]*routeWithName{rts[4], rts[5]},
-			},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"limit":  {"2"},
-				"cursor": {base64.URLEncoding.EncodeToString([]byte{':'})},
-			}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[4], rts[5]},
-			},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"limit":                   {"3"},
-				"include-generated-names": {"true"},
-				"cursor":                  {base64.URLEncoding.EncodeToString([]byte{':'})},
-			}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[2], rts[3], rts[4]},
-				[]*routeWithName{rts[5]},
-			},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"limit": {"1"},
-			}),
-			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0]},
-				[]*routeWithName{rts[1]},
-				[]*routeWithName{rts[4]},
-				[]*routeWithName{rts[5]},
-			},
-		},
-		&listTest{
-			Params: url.Values(map[string][]string{
-				"cursor": {base64.URLEncoding.EncodeToString([]byte{'z'})},
-			}),
-			Pages: [][]*routeWithName{nil},
+			Pages: rts,
 		},
 	}
 
 	for _, test := range tests {
-		t.Logf("running tests for ?%s", test.Params.Encode())
-		pages, err := getInPages(e, test.Params)
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Run(fmt.Sprintf("Test with ?%s", test.Params.Encode()),
+			func(t *testing.T) {
+				links, err := getLinksTest(e, test.Params)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-		if len(pages) != len(test.Pages) {
-			t.Fatalf("number of pages mismatch %d vs %d", len(pages), len(test.Pages))
-		}
+				expected := test.Pages
 
-		for i, n := 0, len(pages); i < n; i++ {
-			page := pages[i]
-			expected := test.Pages[i]
+				if len(links) != len(expected) {
+					t.Fatalf("length mismatch expected %d got %d", len(expected), len(links))
+				}
 
-			if len(page) != len(expected) {
-				t.Fatalf("page %d, length mismatch expected %d got %d", i, len(expected), len(page))
-			}
+				for j, m := 0, len(links); j < m; j++ {
+					mustBeSameNamedRoute(t, links[j], expected[j])
+				}
 
-			for j, m := 0, len(page); j < m; j++ {
-				mustBeSameNamedRoute(t, page[j], expected[j])
-			}
-		}
+			})
 	}
 }
 
 func TestBadList(t *testing.T) {
 	e := needEnv(t)
-	defer e.destroy()
+	defer e.destroy(t)
 
 	tests := map[string]int{
-		url.Values{
-			"cursor": {"not a cursor"},
-		}.Encode(): http.StatusBadRequest,
-
-		url.Values{
-			"limit": {"0"},
-		}.Encode(): http.StatusBadRequest,
-
-		url.Values{
-			"limit": {"not a limit"},
-		}.Encode(): http.StatusBadRequest,
-
-		url.Values{
-			"limit": {"100000"},
-		}.Encode(): http.StatusBadRequest,
-
 		url.Values{
 			"include-generated-names": {"butter"},
 		}.Encode(): http.StatusBadRequest,

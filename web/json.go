@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kellegous/go/context"
+	"github.com/HALtheWise/o-links/context"
 )
 
 // Used as an API response, this is a route with its associated shortcut name.
@@ -32,7 +32,6 @@ type msgRoute struct {
 type msgRoutes struct {
 	Ok     bool             `json:"ok"`
 	Routes []*routeWithName `json:"routes"`
-	Next   string           `json:"next"`
 }
 
 // Encode the given data to JSON and send it to the client.
