@@ -78,17 +78,6 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		req.Uid = fmt.Sprint(randsource.Uint32())
 	}
 
-	if isBannedName(name) {
-		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
-		return
-	}
-
-	reqURL, err := validateURL(r, req.URL)
-	if err != nil {
-		writeJSONError(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	// If no path is specified, a path must be generated.
 	if name == "" {
 		var err error
@@ -99,6 +88,17 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		}
 
 		req.Generated = true
+	}
+
+	name, err := normalizeName(name)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
+	}
+
+	reqURL, err := validateURL(r, req.URL)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	rt := context.Route{
@@ -125,14 +125,13 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
-
-	if p == "" {
-		writeJSONError(w, "no name given", http.StatusBadRequest)
+	name, err := normalizeName(parseName("/api/url/", r.URL.Path))
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	rt, err := ctx.Get(p)
+	rt, err := ctx.Get(name)
 	if err == sql.ErrNoRows {
 		writeJSONError(w, "Not Found", http.StatusNotFound)
 		return
@@ -141,18 +140,17 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSONRoute(w, p, rt)
+	writeJSONRoute(w, name, rt)
 }
 
 func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
-
-	if p == "" {
-		writeJSONError(w, "name required", http.StatusBadRequest)
+	name, err := normalizeName(parseName("/api/url/", r.URL.Path))
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err := ctx.Del(p); err != nil {
+	if err := ctx.Del(name); err != nil {
 		writeJSONBackendError(w, err)
 		return
 	}

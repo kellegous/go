@@ -44,23 +44,21 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
 func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/", r.URL.Path)
-	if p == "" {
+	name := parseName("/", r.URL.Path)
+	if name == "" {
 		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	if _, ok := bannedNames[p]; ok {
-		http.Error(w, "Not Allowed", 404)
-		return
+	name, err := normalizeName(name)
+	if err != nil {
+		writeJSONError(w, err.Error(), http.StatusBadRequest)
 	}
 
-	//fmt.Println(fmt.Sprintf("This is the address parseName returned: %s", p))
-
-	rt, err := ctx.Get(p)
+	rt, err := ctx.Get(name)
 	if err == sql.ErrNoRows {
 		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", cleanName(p)),
+			fmt.Sprintf("/edit/%s", cleanName(name)),
 			http.StatusTemporaryRedirect)
 		return
 	} else if err != nil {

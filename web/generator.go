@@ -82,7 +82,7 @@ func generateLink(ctx *context.Context, uid string) (string, error) {
 
 	// Look for adjective+noun phrases that work
 	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := fmt.Sprintf("%s%s",
+		link := fmt.Sprintf("%s %s",
 			adjectives[randsource.Intn(len(adjectives))], nouns[randsource.Intn(len(nouns))])
 		collides, err := hasCollision(ctx, link, uid)
 		if err != nil {
@@ -97,7 +97,7 @@ func generateLink(ctx *context.Context, uid string) (string, error) {
 
 	// Look for adjective+adjective+noun phrases that work
 	for i := 0; i < NUM_ATTEMPTS; i++ {
-		link := fmt.Sprintf("%s%s%s",
+		link := fmt.Sprintf("%s %s %s",
 			adjectives[randsource.Intn(len(adjectives))],
 			adjectives[randsource.Intn(len(adjectives))],
 			nouns[randsource.Intn(len(nouns))])
@@ -115,7 +115,7 @@ func generateLink(ctx *context.Context, uid string) (string, error) {
 	// Generate a number, with increasing digit count
 	for _, maxval := range []int{9, 99, 9999, 999999, 9999999999} {
 		for i := 0; i < NUM_ATTEMPTS; i++ {
-			link := fmt.Sprintf("%d", randsource.Intn(maxval))
+			link := fmt.Sprintf("generated-%d", randsource.Intn(maxval))
 			collides, err := hasCollision(ctx, link, uid)
 			if err != nil {
 				return "", err
