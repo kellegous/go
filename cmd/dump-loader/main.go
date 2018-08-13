@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	apiPath = "http://%s:%s/api/url/%s"
+	apiPath = "https://%s:%s/api/url/%s"
 )
 
 type config struct {
@@ -65,7 +65,7 @@ func main() {
 		}
 		resp, err := http.Post(req, "application/json", bytes.NewReader(p))
 		if err != nil {
-			log.Printf("error POSTing link : %s\n", k)
+			log.Printf("error POSTing link : %s : %s\n", k, err)
 		} else {
 			log.Printf("POSTed short link (%s) : %s\n", resp.Status, k)
 		}

@@ -122,5 +122,6 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 		mux.Handle("/admin/", &adminHandler{ctx})
 	}
 
+	log.Printf("Starting Go Links server on: %s\n", addr)
 	return http.ListenAndServe(addr, mux)
 }

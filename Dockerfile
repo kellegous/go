@@ -1,15 +1,17 @@
-FROM alpine
+FROM golang:1.10
 
-ENV GOPATH /go
-COPY . /go/src/github.com/kellegous/go
-RUN apk update \
-  && apk add go git musl-dev \
-  && go get github.com/kellegous/go \
-  && apk del go git musl-dev \
-  && rm -rf /var/cache/apk/* \
-  && rm -rf /go/src /go/pkg \
-  && mkdir /data
+RUN apt-get update
+RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -
+RUN apt-get install -y nodejs closure-compiler
+RUN npm install -g typescript sass
 
-EXPOSE 8067
+WORKDIR /go/src/github.com/kellegous/go
+COPY . .
+RUN make ALL
+RUN go get -u -d github.com/kellegous/go
+RUN CGO_ENABLED=0 go build -v -o go .
 
-CMD ["/go/bin/go", "--data=/data"]
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=0 /go/src/github.com/kellegous/go/go .
+CMD ["./go"]
