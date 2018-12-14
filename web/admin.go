@@ -11,7 +11,7 @@ type adminHandler struct {
 }
 
 func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/admin/", r.URL.Path)
+	p, _ := parseName("/admin/", r.URL.Path)
 
 	if p == "" {
 		writeJSONOk(w)
