@@ -23,7 +23,7 @@ func parseName(base, path string) (string, string) {
 	if ix == -1 {
 		return t, ""
 	}
-	return t[:ix], t[ix:]
+	return t[:ix], t[ix + 1:]
 }
 
 // Clean a shortcut name. Currently this just means stripping any leading
