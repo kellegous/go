@@ -41,7 +41,7 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
 func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/", r.URL.Path)
+	p, s := parseName("/", r.URL.Path)
 	if p == "" {
 		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
@@ -58,7 +58,7 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r,
-		rt.URL,
+		rt.URL+s,
 		http.StatusTemporaryRedirect)
 
 }
@@ -94,7 +94,7 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 		getDefault(ctx, w, r)
 	})
 	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
-		p := parseName("/edit/", r.URL.Path)
+		p, _ := parseName("/edit/", r.URL.Path)
 
 		// if this is a banned name, just redirect to the local URI. That'll show em.
 		if isBannedName(p) {

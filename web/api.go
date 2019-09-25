@@ -75,7 +75,7 @@ func validateURL(r *http.Request, s string) error {
 }
 
 func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
 		URL string `json:"url"`
@@ -125,7 +125,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
 		writeJSONError(w, "no name given", http.StatusBadRequest)
@@ -145,7 +145,7 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 }
 
 func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
 		writeJSONError(w, "name required", http.StatusBadRequest)
