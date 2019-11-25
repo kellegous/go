@@ -1,22 +1,23 @@
-package context
+package leveldb
 
 import (
 	"bytes"
 
+	"github.com/kellegous/go/internal"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
 // Iter allows iteration of the named routes in the store.
-type Iter struct {
+type LevelDBRouteIterator struct {
 	it   iterator.Iterator
 	name string
-	rt   *Route
+	rt   *internal.Route
 	err  error
 }
 
-func (i *Iter) decode() error {
-	rt := &Route{}
-	if err := rt.read(bytes.NewBuffer(i.it.Value())); err != nil {
+func (i *LevelDBRouteIterator) decode() error {
+	rt := &internal.Route{}
+	if err := rt.Read(bytes.NewBuffer(i.it.Value())); err != nil {
 		return err
 	}
 
@@ -26,12 +27,12 @@ func (i *Iter) decode() error {
 }
 
 // Valid indicates whether the current values of the iterator are valid.
-func (i *Iter) Valid() bool {
+func (i *LevelDBRouteIterator) Valid() bool {
 	return i.it.Valid() && i.err == nil
 }
 
 // Next advances the iterator to the next value.
-func (i *Iter) Next() bool {
+func (i *LevelDBRouteIterator) Next() bool {
 	i.name = ""
 	i.rt = nil
 
@@ -48,11 +49,11 @@ func (i *Iter) Next() bool {
 }
 
 // Seek ...
-func (i *Iter) Seek(cur []byte) bool {
+func (i *LevelDBRouteIterator) Seek(cur string) bool {
 	i.name = ""
 	i.rt = nil
 
-	v := i.it.Seek(cur)
+	v := i.it.Seek([]byte(cur))
 
 	if !i.it.Valid() {
 		return v
@@ -66,7 +67,7 @@ func (i *Iter) Seek(cur []byte) bool {
 }
 
 // Error returns any active error that has stopped the iterator.
-func (i *Iter) Error() error {
+func (i *LevelDBRouteIterator) Error() error {
 	if err := i.it.Error(); err != nil {
 		return err
 	}
@@ -75,16 +76,16 @@ func (i *Iter) Error() error {
 }
 
 // Name is the name of the current route.
-func (i *Iter) Name() string {
+func (i *LevelDBRouteIterator) Name() string {
 	return i.name
 }
 
 // Route is the current route.
-func (i *Iter) Route() *Route {
+func (i *LevelDBRouteIterator) Route() *internal.Route {
 	return i.rt
 }
 
 // Release disposes of the resources in the iterator.
-func (i *Iter) Release() {
+func (i *LevelDBRouteIterator) Release() {
 	i.it.Release()
 }

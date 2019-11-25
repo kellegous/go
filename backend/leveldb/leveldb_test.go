@@ -1,6 +1,7 @@
-package context
+package leveldb
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -8,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/kellegous/go/internal"
 )
 
 func TestGetPut(t *testing.T) {
@@ -18,26 +19,29 @@ func TestGetPut(t *testing.T) {
 	}
 	defer os.RemoveAll(tmp)
 
-	ctx, err := Open(filepath.Join(tmp, "data"))
+	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ctx.Close()
+	defer backend.Close()
 
-	if _, err := ctx.Get("not_found"); err != leveldb.ErrNotFound {
-		t.Fatalf("expected ErrNotFound, got \"%v\"", err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	if _, err := backend.Get(ctx, "not_found"); err != internal.ErrRouteNotFound {
+		t.Fatalf("expected ErrRouteNotFound, got \"%v\"", err)
 	}
 
-	a := &Route{
+	a := &internal.Route{
 		URL:  "http://www.kellegous.com/",
 		Time: time.Now(),
 	}
 
-	if err := ctx.Put("key", a); err != nil {
+	if err := backend.Put(ctx, "key", a); err != nil {
 		t.Fatal(err)
 	}
 
-	b, err := ctx.Get("key")
+	b, err := backend.Get(ctx, "key")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -58,15 +62,18 @@ func TestNextID(t *testing.T) {
 	}
 	defer os.RemoveAll(tmp)
 
-	ctx, err := Open(filepath.Join(tmp, "data"))
+	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer ctx.Close()
+	defer backend.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
 
 	var e uint64 = 1
 	for i := 0; i < 501; i++ {
-		r, err := ctx.NextID()
+		r, err := backend.NextID(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -86,12 +93,15 @@ func TestEmptyList(t *testing.T) {
 	}
 	defer os.RemoveAll(tmp)
 
-	ctx, err := Open(filepath.Join(tmp, "data"))
+	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	it := ctx.List(nil)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	it, err := backend.List(ctx, "")
 	defer it.Release()
 
 	if it.Valid() {
@@ -107,9 +117,9 @@ func TestEmptyList(t *testing.T) {
 	}
 }
 
-func putRoutes(ctx *Context, names ...string) error {
+func putRoutes(ctx context.Context, backend *LevelDBBackend, names ...string) error {
 	for _, name := range names {
-		if err := ctx.Put(name, &Route{
+		if err := backend.Put(ctx, name, &internal.Route{
 			URL:  fmt.Sprintf("http://%s/", name),
 			Time: time.Unix(0, 420),
 		}); err != nil {
@@ -119,7 +129,7 @@ func putRoutes(ctx *Context, names ...string) error {
 	return nil
 }
 
-func mustBeIterOf(t *testing.T, iter *Iter, names ...string) {
+func mustBeIterOf(t *testing.T, iter internal.RouteIterator, names ...string) {
 	defer iter.Release()
 
 	if iter.Valid() {
@@ -172,16 +182,33 @@ func TestList(t *testing.T) {
 	}
 	defer os.RemoveAll(tmp)
 
-	ctx, err := Open(filepath.Join(tmp, "data"))
+	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if err := putRoutes(ctx, "a", "c", "d"); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	if err := putRoutes(ctx, backend, "a", "c", "d"); err != nil {
 		t.Fatal(err)
 	}
 
-	mustBeIterOf(t, ctx.List(nil), "a", "c", "d")
-	mustBeIterOf(t, ctx.List([]byte{'b'}), "c", "d")
-	mustBeIterOf(t, ctx.List([]byte{'z'}))
+	iter, err := backend.List(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustBeIterOf(t, iter, "a", "c", "d")
+
+	iter, err = backend.List(ctx, "b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustBeIterOf(t, iter, "c", "d")
+
+	iter, err = backend.List(ctx, "z")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustBeIterOf(t, iter)
 }
