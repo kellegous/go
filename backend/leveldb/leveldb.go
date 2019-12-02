@@ -21,8 +21,8 @@ const (
 	idLogFilename    = "id"
 )
 
-// LevelDBBackend provides access to the leveldb store.
-type LevelDBBackend struct {
+// Backend provides access to the leveldb store.
+type Backend struct {
 	// Path contains the location on disk where this DB exists.
 	path string
 	db   *leveldb.DB
@@ -65,9 +65,9 @@ func load(filename string) (uint64, error) {
 	return id, nil
 }
 
-// New instantiates a new LevelDBBackend
-func New(path string) (*LevelDBBackend, error) {
-	backend := LevelDBBackend{
+// New instantiates a new Backend
+func New(path string) (*Backend, error) {
+	backend := Backend{
 		path: path,
 	}
 
@@ -94,12 +94,12 @@ func New(path string) (*LevelDBBackend, error) {
 }
 
 // Close the resources associated with this backend.
-func (backend *LevelDBBackend) Close() error {
+func (backend *Backend) Close() error {
 	return backend.db.Close()
 }
 
 // Get retreives a shortcut from the data store.
-func (backend *LevelDBBackend) Get(ctx context.Context, name string) (*internal.Route, error) {
+func (backend *Backend) Get(ctx context.Context, name string) (*internal.Route, error) {
 	val, err := backend.db.Get([]byte(name), nil)
 	if err != nil {
 		if errors.Is(err, leveldb.ErrNotFound) {
@@ -117,7 +117,7 @@ func (backend *LevelDBBackend) Get(ctx context.Context, name string) (*internal.
 }
 
 // Put stores a new shortcut in the data store.
-func (backend *LevelDBBackend) Put(ctx context.Context, key string, rt *internal.Route) error {
+func (backend *Backend) Put(ctx context.Context, key string, rt *internal.Route) error {
 	var buf bytes.Buffer
 	if err := rt.Write(&buf); err != nil {
 		return err
@@ -127,13 +127,13 @@ func (backend *LevelDBBackend) Put(ctx context.Context, key string, rt *internal
 }
 
 // Del removes an existing shortcut from the data store.
-func (backend *LevelDBBackend) Del(ctx context.Context, key string) error {
+func (backend *Backend) Del(ctx context.Context, key string) error {
 	return backend.db.Delete([]byte(key), &opt.WriteOptions{Sync: true})
 }
 
 // List all routes in an iterator, starting with the key prefix of start (which can also be nil).
-func (backend *LevelDBBackend) List(ctx context.Context, start string) (internal.RouteIterator, error) {
-	return &LevelDBRouteIterator{
+func (backend *Backend) List(ctx context.Context, start string) (internal.RouteIterator, error) {
+	return &RouteIterator{
 		it: backend.db.NewIterator(&util.Range{
 			Start: []byte(start),
 			Limit: nil,
@@ -142,7 +142,7 @@ func (backend *LevelDBBackend) List(ctx context.Context, start string) (internal
 }
 
 // GetAll gets everything in the db to dump it out for backup purposes
-func (backend *LevelDBBackend) GetAll(ctx context.Context) (map[string]internal.Route, error) {
+func (backend *Backend) GetAll(ctx context.Context) (map[string]internal.Route, error) {
 	golinks := map[string]internal.Route{}
 	iter := backend.db.NewIterator(nil, nil)
 	defer iter.Release()
@@ -164,7 +164,7 @@ func (backend *LevelDBBackend) GetAll(ctx context.Context) (map[string]internal.
 	return golinks, nil
 }
 
-func (backend *LevelDBBackend) commit(id uint64) error {
+func (backend *Backend) commit(id uint64) error {
 	w, err := os.Create(filepath.Join(backend.path, idLogFilename))
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (backend *LevelDBBackend) commit(id uint64) error {
 }
 
 // NextID generates the next numeric ID to be used for an auto-named shortcut.
-func (backend *LevelDBBackend) NextID(ctx context.Context) (uint64, error) {
+func (backend *Backend) NextID(ctx context.Context) (uint64, error) {
 	backend.lck.Lock()
 	defer backend.lck.Unlock()
 

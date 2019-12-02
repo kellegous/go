@@ -7,15 +7,15 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
-// Iter allows iteration of the named routes in the store.
-type LevelDBRouteIterator struct {
+// RouteIterator allows iteration of the named routes in the store.
+type RouteIterator struct {
 	it   iterator.Iterator
 	name string
 	rt   *internal.Route
 	err  error
 }
 
-func (i *LevelDBRouteIterator) decode() error {
+func (i *RouteIterator) decode() error {
 	rt := &internal.Route{}
 	if err := rt.Read(bytes.NewBuffer(i.it.Value())); err != nil {
 		return err
@@ -27,12 +27,12 @@ func (i *LevelDBRouteIterator) decode() error {
 }
 
 // Valid indicates whether the current values of the iterator are valid.
-func (i *LevelDBRouteIterator) Valid() bool {
+func (i *RouteIterator) Valid() bool {
 	return i.it.Valid() && i.err == nil
 }
 
 // Next advances the iterator to the next value.
-func (i *LevelDBRouteIterator) Next() bool {
+func (i *RouteIterator) Next() bool {
 	i.name = ""
 	i.rt = nil
 
@@ -49,7 +49,7 @@ func (i *LevelDBRouteIterator) Next() bool {
 }
 
 // Seek ...
-func (i *LevelDBRouteIterator) Seek(cur string) bool {
+func (i *RouteIterator) Seek(cur string) bool {
 	i.name = ""
 	i.rt = nil
 
@@ -67,7 +67,7 @@ func (i *LevelDBRouteIterator) Seek(cur string) bool {
 }
 
 // Error returns any active error that has stopped the iterator.
-func (i *LevelDBRouteIterator) Error() error {
+func (i *RouteIterator) Error() error {
 	if err := i.it.Error(); err != nil {
 		return err
 	}
@@ -76,16 +76,16 @@ func (i *LevelDBRouteIterator) Error() error {
 }
 
 // Name is the name of the current route.
-func (i *LevelDBRouteIterator) Name() string {
+func (i *RouteIterator) Name() string {
 	return i.name
 }
 
 // Route is the current route.
-func (i *LevelDBRouteIterator) Route() *internal.Route {
+func (i *RouteIterator) Route() *internal.Route {
 	return i.rt
 }
 
 // Release disposes of the resources in the iterator.
-func (i *LevelDBRouteIterator) Release() {
+func (i *RouteIterator) Release() {
 	i.it.Release()
 }

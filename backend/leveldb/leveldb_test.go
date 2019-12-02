@@ -117,7 +117,7 @@ func TestEmptyList(t *testing.T) {
 	}
 }
 
-func putRoutes(ctx context.Context, backend *LevelDBBackend, names ...string) error {
+func putRoutes(ctx context.Context, backend *Backend, names ...string) error {
 	for _, name := range names {
 		if err := backend.Put(ctx, name, &internal.Route{
 			URL:  fmt.Sprintf("http://%s/", name),
