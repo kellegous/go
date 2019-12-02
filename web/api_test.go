@@ -19,7 +19,6 @@ import (
 	"github.com/kellegous/go/backend"
 	"github.com/kellegous/go/backend/leveldb"
 	"github.com/kellegous/go/internal"
-	goleveldb "github.com/syndtr/goleveldb/leveldb"
 )
 
 type urlReq struct {
@@ -298,7 +297,10 @@ func TestAPIDel(t *testing.T) {
 	}
 	mustBeOk(t, m.Ok)
 
-	if _, err := e.ctx.Get("xxx"); err != leveldb.ErrNotFound {
+	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	if _, err := e.backend.Get(ctx, "xxx"); !errors.Is(err, internal.ErrRouteNotFound) {
 		t.Fatal("expected xxx to be deleted")
 	}
 }
@@ -380,7 +382,7 @@ func TestAPIList(t *testing.T) {
 	rts := []*routeWithName{
 		&routeWithName{
 			Name: "0",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://0.com/",
 				Time: time.Now(),
 			},
@@ -388,7 +390,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: "1",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://1.com/",
 				Time: time.Now(),
 			},
@@ -396,7 +398,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: ":a",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://ga.com/",
 				Time: time.Now(),
 			},
@@ -404,7 +406,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: ":b",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://gb.com/",
 				Time: time.Now(),
 			},
@@ -412,7 +414,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: "a",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://a.com/",
 				Time: time.Now(),
 			},
@@ -420,15 +422,18 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: "b",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://b.com/",
 				Time: time.Now(),
 			},
 		},
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
 	for _, rt := range rts {
-		if err := e.ctx.Put(rt.Name, rt.Route); err != nil {
+		if err := e.backend.Put(ctx, rt.Name, rt.Route); err != nil {
 			t.Fatal(err)
 		}
 	}
