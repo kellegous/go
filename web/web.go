@@ -10,9 +10,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/kellegous/go/backend"
 	"github.com/kellegous/go/internal"
-	"github.com/spf13/viper"
 )
 
 // Serve a bundled asset over HTTP.

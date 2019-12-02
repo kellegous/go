@@ -5,11 +5,12 @@ import (
 	"log"
 	"strings"
 
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
 	"github.com/kellegous/go/backend"
 	"github.com/kellegous/go/backend/leveldb"
 	"github.com/kellegous/go/web"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 func main() {
