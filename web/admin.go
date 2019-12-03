@@ -1,16 +1,18 @@
 package web
 
 import (
+	"context"
 	"net/http"
+	"time"
 
-	"github.com/kellegous/go/context"
+	"github.com/kellegous/go/backend"
 )
 
 type adminHandler struct {
-	ctx *context.Context
+	backend backend.Backend
 }
 
-func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func adminGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/admin/", r.URL.Path)
 
 	if p == "" {
@@ -18,8 +20,11 @@ func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
 	if p == "dumps" {
-		if golinks, err := ctx.GetAll(); err != nil {
+		if golinks, err := backend.GetAll(ctx); err != nil {
 			writeJSONBackendError(w, err)
 			return
 		} else {
@@ -32,7 +37,7 @@ func adminGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 func (h *adminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		adminGet(h.ctx, w, r)
+		adminGet(h.backend, w, r)
 	default:
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}

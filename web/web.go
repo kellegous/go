@@ -2,13 +2,18 @@ package web
 
 import (
 	"bytes"
+	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/kellegous/go/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/spf13/viper"
+
+	"github.com/kellegous/go/backend"
+	"github.com/kellegous/go/internal"
 )
 
 // Serve a bundled asset over HTTP.
@@ -40,15 +45,18 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
-func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/", r.URL.Path)
 	if p == "" {
 		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
 	}
 
-	rt, err := ctx.Get(p)
-	if err == leveldb.ErrNotFound {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	rt, err := backend.Get(ctx, p)
+	if errors.Is(err, internal.ErrRouteNotFound) {
 		http.Redirect(w, r,
 			fmt.Sprintf("/edit/%s", cleanName(p)),
 			http.StatusTemporaryRedirect)
@@ -63,13 +71,16 @@ func getDefault(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getLinks(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	t, err := templateFromAssetFn(linksHtml)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	rts, err := ctx.GetAll()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	rts, err := backend.GetAll(ctx)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -81,17 +92,21 @@ func getLinks(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
-func ListenAndServe(addr string, admin bool, version string, ctx *context.Context) error {
+func ListenAndServe(backend backend.Backend) error {
+	addr := viper.GetString("addr")
+	admin := viper.GetBool("admin")
+	version := viper.GetString("version")
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(ctx, w, r)
+		apiURL(backend, w, r)
 	})
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(ctx, w, r)
+		apiURLs(backend, w, r)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getDefault(ctx, w, r)
+		getDefault(backend, w, r)
 	})
 	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
 		p := parseName("/edit/", r.URL.Path)
@@ -105,7 +120,7 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 		serveAsset(w, r, "edit.html")
 	})
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
-		getLinks(ctx, w, r)
+		getLinks(backend, w, r)
 	})
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
@@ -119,7 +134,7 @@ func ListenAndServe(addr string, admin bool, version string, ctx *context.Contex
 
 	// TODO(knorton): Remove the admin handler.
 	if admin {
-		mux.Handle("/admin/", &adminHandler{ctx})
+		mux.Handle("/admin/", &adminHandler{backend})
 	}
 
 	return http.ListenAndServe(addr, mux)

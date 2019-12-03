@@ -1,15 +1,8 @@
-FROM alpine
+FROM golang:alpine
 
-ENV GOPATH /go
-COPY . /go/src/github.com/kellegous/go
-RUN apk update \
-  && apk add go git musl-dev \
-  && go get github.com/kellegous/go \
-  && apk del go git musl-dev \
-  && rm -rf /var/cache/apk/* \
-  && rm -rf /go/src /go/pkg \
-  && mkdir /data
+COPY . /src
+RUN cd /src/cmd/go && go build -mod=vendor -o /usr/bin/go
 
 EXPOSE 8067
 
-CMD ["/go/bin/go", "--data=/data"]
+CMD ["/usr/bin/go", "--data=/data"]

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -10,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kellegous/go/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/kellegous/go/backend"
+	"github.com/kellegous/go/internal"
 )
 
 const (
@@ -44,9 +45,9 @@ func encodeID(id uint64) string {
 	return string(b)
 }
 
-// Advance to the next contetxt id and encode it as an ID.
-func nextEncodedID(ctx *context.Context) (string, error) {
-	id, err := ctx.NextID()
+// Advance to the next id and encode it as an ID.
+func nextEncodedID(ctx context.Context, backend backend.Backend) (string, error) {
+	id, err := backend.NextID(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -74,7 +75,7 @@ func validateURL(r *http.Request, s string) error {
 	return nil
 }
 
-func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
@@ -101,22 +102,25 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If no name is specified, an ID must be generate.
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	// If no name is specified, an ID must be generated.
 	if p == "" {
 		var err error
-		p, err = nextEncodedID(ctx)
+		p, err = nextEncodedID(ctx, backend)
 		if err != nil {
 			writeJSONBackendError(w, err)
 			return
 		}
 	}
 
-	rt := context.Route{
+	rt := internal.Route{
 		URL:  req.URL,
 		Time: time.Now(),
 	}
 
-	if err := ctx.Put(p, &rt); err != nil {
+	if err := backend.Put(ctx, p, &rt); err != nil {
 		writeJSONBackendError(w, err)
 		return
 	}
@@ -124,7 +128,7 @@ func apiURLPost(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	writeJSONRoute(w, p, &rt)
 }
 
-func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func apiURLGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
@@ -132,8 +136,11 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rt, err := ctx.Get(p)
-	if err == leveldb.ErrNotFound {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	rt, err := backend.Get(ctx, p)
+	if errors.Is(err, internal.ErrRouteNotFound) {
 		writeJSONError(w, "Not Found", http.StatusNotFound)
 		return
 	} else if err != nil {
@@ -144,7 +151,7 @@ func apiURLGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	writeJSONRoute(w, p, rt)
 }
 
-func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func apiURLDelete(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
@@ -152,7 +159,10 @@ func apiURLDelete(ctx *context.Context, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := ctx.Del(p); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	if err := backend.Del(ctx, p); err != nil {
 		writeJSONBackendError(w, err)
 		return
 	}
@@ -198,7 +208,7 @@ func parseBool(v string, def bool) (bool, error) {
 	return false, errors.New("invalid boolean value")
 }
 
-func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func apiURLsGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	c, err := parseCursor(r.FormValue("cursor"))
 	if err != nil {
 		writeJSONError(w, "invalid cursor value", http.StatusBadRequest)
@@ -221,13 +231,20 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 		Ok: true,
 	}
 
-	iter := ctx.List(c)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	iter, err := backend.List(ctx, string(c))
+	if err != nil {
+		writeJSONBackendError(w, err)
+		return
+	}
 	defer iter.Release()
 
 	for iter.Next() {
 		// if we should be ignoring generated links, skip over that range.
 		if !ig && isGenerated(iter.Name()) {
-			iter.Seek(postGenCursor)
+			iter.Seek(string(postGenCursor))
 			if !iter.Valid() {
 				break
 			}
@@ -255,35 +272,35 @@ func apiURLsGet(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, &res, http.StatusOK)
 }
 
-func apiURL(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func apiURL(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
-		apiURLPost(ctx, w, r)
+		apiURLPost(backend, w, r)
 	case "GET":
-		apiURLGet(ctx, w, r)
+		apiURLGet(backend, w, r)
 	case "DELETE":
-		apiURLDelete(ctx, w, r)
+		apiURLDelete(backend, w, r)
 	default:
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }
 
-func apiURLs(ctx *context.Context, w http.ResponseWriter, r *http.Request) {
+func apiURLs(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		apiURLsGet(ctx, w, r)
+		apiURLsGet(backend, w, r)
 	default:
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }
 
 // Setup ...
-func Setup(m *http.ServeMux, ctx *context.Context) {
+func Setup(m *http.ServeMux, backend backend.Backend) {
 	m.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(ctx, w, r)
+		apiURL(backend, w, r)
 	})
 
 	m.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(ctx, w, r)
+		apiURLs(backend, w, r)
 	})
 }

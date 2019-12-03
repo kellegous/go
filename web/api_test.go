@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -15,8 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kellegous/go/context"
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/kellegous/go/backend"
+	"github.com/kellegous/go/backend/leveldb"
+	"github.com/kellegous/go/internal"
 )
 
 type urlReq struct {
@@ -24,9 +26,9 @@ type urlReq struct {
 }
 
 type env struct {
-	mux *http.ServeMux
-	dir string
-	ctx *context.Context
+	mux     *http.ServeMux
+	dir     string
+	backend backend.Backend
 }
 
 func (e *env) destroy() {
@@ -76,7 +78,7 @@ func newEnv() (*env, error) {
 		return nil, err
 	}
 
-	ctx, err := context.Open(filepath.Join(dir, "data"))
+	backend, err := leveldb.New(filepath.Join(dir, "data"))
 	if err != nil {
 		os.RemoveAll(dir)
 		return nil, err
@@ -84,12 +86,12 @@ func newEnv() (*env, error) {
 
 	mux := http.NewServeMux()
 
-	Setup(mux, ctx)
+	Setup(mux, backend)
 
 	return &env{
-		mux: mux,
-		dir: dir,
-		ctx: ctx,
+		mux:     mux,
+		dir:     dir,
+		backend: backend,
 	}, nil
 }
 
@@ -121,7 +123,7 @@ func mustBeSameNamedRoute(t *testing.T, a, b *routeWithName) {
 	}
 }
 
-func mustBeRouteOf(t *testing.T, rt *context.Route, url string) {
+func mustBeRouteOf(t *testing.T, rt *internal.Route, url string) {
 	if rt == nil {
 		t.Fatal("route is nil")
 	}
@@ -272,7 +274,10 @@ func TestAPIDel(t *testing.T) {
 	e := needEnv(t)
 	defer e.destroy()
 
-	if err := e.ctx.Put("xxx", &context.Route{
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	if err := e.backend.Put(ctx, "xxx", &internal.Route{
 		URL:  "http://ex.com/",
 		Time: time.Now(),
 	}); err != nil {
@@ -292,7 +297,10 @@ func TestAPIDel(t *testing.T) {
 	}
 	mustBeOk(t, m.Ok)
 
-	if _, err := e.ctx.Get("xxx"); err != leveldb.ErrNotFound {
+	ctx, cancel = context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	if _, err := e.backend.Get(ctx, "xxx"); !errors.Is(err, internal.ErrRouteNotFound) {
 		t.Fatal("expected xxx to be deleted")
 	}
 }
@@ -374,7 +382,7 @@ func TestAPIList(t *testing.T) {
 	rts := []*routeWithName{
 		&routeWithName{
 			Name: "0",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://0.com/",
 				Time: time.Now(),
 			},
@@ -382,7 +390,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: "1",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://1.com/",
 				Time: time.Now(),
 			},
@@ -390,7 +398,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: ":a",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://ga.com/",
 				Time: time.Now(),
 			},
@@ -398,7 +406,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: ":b",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://gb.com/",
 				Time: time.Now(),
 			},
@@ -406,7 +414,7 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: "a",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://a.com/",
 				Time: time.Now(),
 			},
@@ -414,15 +422,18 @@ func TestAPIList(t *testing.T) {
 
 		&routeWithName{
 			Name: "b",
-			Route: &context.Route{
+			Route: &internal.Route{
 				URL:  "http://b.com/",
 				Time: time.Now(),
 			},
 		},
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
 	for _, rt := range rts {
-		if err := e.ctx.Put(rt.Name, rt.Route); err != nil {
+		if err := e.backend.Put(ctx, rt.Name, rt.Route); err != nil {
 			t.Fatal(err)
 		}
 	}
