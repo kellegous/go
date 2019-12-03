@@ -2,6 +2,7 @@ package internal
 
 import (
 	"encoding/binary"
+	"errors"
 	"io"
 	"io/ioutil"
 	"time"
@@ -24,18 +25,7 @@ type RouteIterator interface {
 	Release()
 }
 
-type RouteNotFound struct {
-}
-
-var ErrRouteNotFound = errRouteNotFound()
-
-func (e *RouteNotFound) Error() string {
-	return "route not found"
-}
-
-func errRouteNotFound() error {
-	return &RouteNotFound{}
-}
+var ErrRouteNotFound = errors.New("route not found")
 
 // Serialize this Route into the given Writer.
 func (o *Route) Write(w io.Writer) error {
