@@ -12,12 +12,12 @@ ALL: web/bindata.go
 	mkdir -p $@
 
 .build/assets/%.css: web/assets/%.scss
-	sass --no-cache --sourcemap=none --style=compressed $< $@
+	sass --no-source-map --style=compressed $< $@
 
 .build/assets/%.js: web/assets/%.ts
 	$(eval TMP := $(shell mktemp))
 	tsc --out $(TMP) $< 
-	closure-compiler --js $(TMP) --js_output_file $@
+	npx google-closure-compiler --js=$(TMP) --js_output_file=$@
 	rm -f $(TMP)
 
 .build/assets/%: web/assets/%

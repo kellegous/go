@@ -18,29 +18,23 @@ import (
 
 // Serve a bundled asset over HTTP.
 func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
-	n, err := AssetInfo(name)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
 	a, err := Asset(name)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
 
-	http.ServeContent(w, r, n.Name(), n.ModTime(), bytes.NewReader(a))
+	http.ServeContent(w, r, name, time.Now(), bytes.NewReader(a))
 }
 
-func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) {
-	a, err := fn()
+func templateFromAssetFn(fn func() ([]byte, error), name string) (*template.Template, error) {
+	bytes, err := fn()
 	if err != nil {
 		return nil, err
 	}
 
-	t := template.New(a.info.Name())
-	return t.Parse(string(a.bytes))
+	t := template.New(name)
+	return t.Parse(string(bytes))
 }
 
 // The default handler responds to most requests. It is responsible for the
@@ -72,7 +66,7 @@ func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 }
 
 func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	t, err := templateFromAssetFn(linksHtml)
+	t, err := templateFromAssetFn(links_html, "links.html")
 	if err != nil {
 		log.Panic(err)
 	}
