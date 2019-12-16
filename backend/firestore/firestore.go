@@ -22,11 +22,10 @@ type Backend struct {
 }
 
 // New instantiates a new Backend
-func New(path string) (*Backend, error) {
+func New(ctx context.Context, path string) (*Backend, error) {
 	if path == "" {
 		path = getGoogleProject()
 	}
-	ctx := context.Background()
 	client, err := fs.NewClient(ctx, path)
 	if err != nil {
 		return nil, err
@@ -163,7 +162,7 @@ func (backend *Backend) NextID(ctx context.Context) (uint64, error) {
 }
 
 func getGoogleProject() string {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	creds, err := google.FindDefaultCredentials(ctx)

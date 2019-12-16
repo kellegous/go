@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
@@ -43,7 +44,8 @@ func main() {
 		}
 	case "firestore":
 		var err error
-		backend, err = firestore.New(viper.GetString("project"))
+
+		backend, err = firestore.New(context.Background(), viper.GetString("project"))
 		if err != nil {
 			log.Panic(err)
 		}
