@@ -9,7 +9,6 @@ COPY . .
 RUN GOOS=linux GOARCH=amd64 go build -mod=vendor -ldflags="-s -w" -o go-shorty ./cmd/go
 # Compress the binary and verify the output using UPX
 # h/t @FiloSottile/Filippo Valsorda: https://blog.filippo.io/shrink-your-go-binaries-with-this-one-weird-trick/
-RUN upx --ultra-brute go-shorty && upx -t go-shorty
 
 # Move the built binary to /dist
 WORKDIR /dist
@@ -19,6 +18,7 @@ RUN cp /build/go-shorty ./go-shorty
 # h/t @vaind/Ivan Dlugos: https://dev.to/ivan/go-build-a-minimal-docker-image-in-just-three-steps-514i
 RUN ldd go-shorty | tr -s '[:blank:]' '\n' | grep '^/' | xargs -I % sh -c 'mkdir -p $(dirname ./%); cp % ./%;'
 RUN mkdir -p lib64 && cp /lib64/ld-linux-x86-64.so.2 lib64/
+RUN upx --ultra-brute go-shorty && upx -t go-shorty
 RUN mkdir /data
 
 # Copy the contents of /dist to the root of a scratch containter
