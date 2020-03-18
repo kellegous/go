@@ -26,12 +26,10 @@ func adminGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	if p == "dumps" {
 		if golinks, err := backend.GetAll(ctx); err != nil {
 			writeJSONBackendError(w, err)
-			return
 		} else {
 			writeJSON(w, golinks, http.StatusOK)
 		}
 	}
-
 }
 
 func (h *adminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

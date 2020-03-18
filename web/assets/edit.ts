@@ -59,8 +59,7 @@ namespace go {
                 }
 
                 var url = route.url || '',
-                    name = route.name || '',
-                    hits = route.hits || '';
+                    name = route.name || '';
                 if (url) {
                     history.replaceState({}, null, '/edit/' + name);
                     showLink(name);
@@ -105,25 +104,31 @@ namespace go {
         dom.css($cmp, 'transform', 'scaleY(1)');
     };
 
+    // This function shows the keyword link in quick-copy dropdown
     var showLink = (name: string) => {
         var lnk = location.origin + '/' + name;
 
+        // Create a node text element and add class="link"
         $cmp.textContent = '';
         $cmp.classList.remove('fuck');
         $cmp.classList.add('link');
 
+        // Create an anchor link element
         var $a = dom.c('a');
         $a.setAttribute('href', lnk);
         $a.textContent = lnk;
         $cmp.appendChild($a);
 
+        // Add copy hint to  quick-copy drop down
         var $h = dom.c('span');
         $h.classList.add('hnt');
         $h.textContent = copyKey();
         $cmp.appendChild($h);
 
+        // Open the quick-copy drawer
         dom.css($cmp, 'transform', 'scaleY(1)');
 
+        // Select the text in the dropdown
         getSelection().setBaseAndExtent($a, 0, $a, 1);
     };
 

@@ -12,7 +12,7 @@ import (
 type Route struct {
 	URL  string    `json:"url"`
 	Time time.Time `json:"time"`
-	Hits int       `json:"hits"` // TODO(sgarf): Implement hit counting
+	Hits string    `json:"hits"` // TODO(sgarf): Implement hit counting
 }
 
 // RouteIterator allows iteration of the named routes in the store.

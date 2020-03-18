@@ -1,47 +1,142 @@
-@import "lib/global";
+@import 'lib/global';
+
+div {
+  width: 65%;
+  margin: 0 auto;
+  overflow: hidden;
+
+  a {
+    color: #03a9f4;
+    text-decoration: none;
+
+    &:hover {
+      opacity: 0.6;
+    }
+  }
+
+  .full-url {
+    font-size: 16px;
+    color: rgb(0, 140, 255);
+  }
+}
 
 .links {
-    width: 65%;
-    margin: 0 auto;
-    overflow: hidden;
+  width: 65%;
+  margin: 0 auto;
+  overflow: hidden;
 
-    a {
-        color: #03a9f4;
-        text-decoration: none;
+  a {
+    color: #03a9f4;
+    text-decoration: none;
 
-        &:hover {
-            opacity: 0.6;
-        }
+    &:hover {
+      opacity: 0.6;
     }
+  }
 
-    .full-url {
-        font-size: 16px;
-        color: #ddd;
-    }
+  .full-url {
+    font-size: 16px;
+    color: rgb(0, 140, 255);
+  }
 }
 
 .links h1 {
-    color: #0199ff;
-    margin-bottom: 40px;
+  color: #0199ff;
+  margin-bottom: 40px;
 
-    &:hover {
-        opacity: 0.6;
-    }
+  &:hover {
+    opacity: 0.6;
+  }
 }
 
 .links ul {
-    padding: 0;
-    list-style-type: none;
+  padding: 0;
+  list-style-type: none;
 }
 
 .links ul li {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 div.hits {
-    color: #9e9e9e;
+  color: #9e9e9e;
 
-    &:hover {
-        opacity: 0.6;
-    }
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+div.keyword {
+  color: #dd4242;
+
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+span.keyword {
+  color: #dd4242;
+
+  &:hover {
+    opacity: 0.6;
+  }
+}
+
+#edit {
+  position: relative;
+  top: 20px;
+  // left: 5px;
+  font-size: 36px;
+  margin-right: 5px;
+  background-image: url('/s/edit.svg');
+  background-repeat: no-repeat;
+  cursor: pointer;
+  transition: opacity 200ms cubic-bezier(0.77, 0, 0.175, 1);
+  opacity: 0.2;
+  pointer-events: none;
+  display: inline;
+}
+
+#edit:hover {
+  opacity: 0.9;
+}
+
+/* fira-code-regular - latin */
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''),
+       url('/s/fira-code-v8-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('/s/fira-code-v8-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+.divTable{
+	display: table;
+	width: 100%;
+}
+.divTableRow {
+	display: table-row;
+}
+.divTableHeading {
+	background-color: #EEE;
+	display: table-header-group;
+}
+.divTableCell, .divTableHead {
+	border: 1px solid #999999;
+	display: table-cell;
+	padding: 3px 10px;
+}
+.divTableHeading {
+	background-color: #EEE;
+	display: table-header-group;
+	font-weight: bold;
+}
+.divTableFoot {
+	background-color: #EEE;
+	display: table-footer-group;
+	font-weight: bold;
+}
+.divTableBody {
+	display: table-row-group;
 }

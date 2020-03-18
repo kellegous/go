@@ -28,11 +28,11 @@ form {
 }
 
 #url::-webkit-input-placeholder {
-   color: #ddd;
+  color: #ddd;
 }
 
 #url::-moz-placeholder {
-   color: #ddd;
+  color: #ddd;
 }
 
 #cmp {
@@ -94,4 +94,15 @@ form {
 
 #cls:hover {
   opacity: 0.6;
+  background-color: #dd4242;
+}
+
+/* fira-code-regular - latin */
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''),
+       url('/s/fira-code-v8-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('/s/fira-code-v8-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }

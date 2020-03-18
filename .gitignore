@@ -1,3 +1,8 @@
 .build
 .idea
+.vscode/
 data/
+.DS_Store
+dump-loader
+go-links
+golinks-*.json

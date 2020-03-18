@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/kellegous/go/backend"
 	"github.com/kellegous/go/internal"
 )
@@ -21,7 +23,7 @@ const (
 
 var (
 	errInvalidURL        = errors.New("Invalid URL")
-	errRedirectLoop      = errors.New(" I'm sorry, Dave. I'm afraid I can't do that")
+	errRedirectLoop      = errors.New("I'm sorry, Dave. I'm afraid I can't do that")
 	genURLPrefix    byte = ':'
 	postGenCursor        = []byte{genURLPrefix + 1}
 )
@@ -62,9 +64,10 @@ func validateURL(r *http.Request, s string) error {
 	}
 
 	switch u.Scheme {
-	case "http", "https", "mailto", "ftp":
+	case "http", "https", "mailto", "ftp", "slack", "ssh", "zoommtg", "zoomus":
 		break
 	default:
+		log.Printf("Invalid scheme for URL %s", u)
 		return errInvalidURL
 	}
 
@@ -76,25 +79,29 @@ func validateURL(r *http.Request, s string) error {
 }
 
 func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+	log.Printf("POST API request for url %s from %s:", r.URL.Path, r.RemoteAddr)
 	p, _ := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
 		URL  string `json:"url"`
-		Hits int    `json:"hits"`
+		Hits string `json:"hits"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSONError(w, "invalid json", http.StatusBadRequest)
+		log.Debugf("Bad json, failed to decode request body: %+v", r.Body)
 		return
 	}
 
 	if req.URL == "" {
 		writeJSONError(w, "url required", http.StatusBadRequest)
+		log.Debugf("Url required: %+v", r.URL.RequestURI)
 		return
 	}
 
 	if isBannedName(p) {
 		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
+		log.Debugf("Banned named attempted: %+v", r.URL.RequestURI)
 		return
 	}
 
@@ -119,7 +126,7 @@ func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 	rt := internal.Route{
 		URL:  req.URL,
 		Time: time.Now(),
-		Hits: req.Hits + 1,
+		Hits: req.Hits,
 	}
 
 	if err := backend.Put(ctx, p, &rt); err != nil {
@@ -132,7 +139,7 @@ func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 
 func apiURLGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p, _ := parseName("/api/url/", r.URL.Path)
-
+	log.Debugf("GET API request for url %s from %s:", r.URL.Path, r.RemoteAddr)
 	if p == "" {
 		writeJSONError(w, "no name given", http.StatusBadRequest)
 		return
@@ -168,7 +175,7 @@ func apiURLDelete(backend backend.Backend, w http.ResponseWriter, r *http.Reques
 		writeJSONBackendError(w, err)
 		return
 	}
-
+	log.Printf("DELETE API request for url %s from %s:", r.URL.Path, r.RemoteAddr)
 	writeJSONOk(w)
 }
 
@@ -211,6 +218,7 @@ func parseBool(v string, def bool) (bool, error) {
 }
 
 func apiURLsGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+	log.Printf("GET API request (ALL URLS) for url %s from %s", r.URL.Path, r.RemoteAddr)
 	c, err := parseCursor(r.FormValue("cursor"))
 	if err != nil {
 		writeJSONError(w, "invalid cursor value", http.StatusBadRequest)
@@ -277,12 +285,16 @@ func apiURLsGet(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 func apiURL(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
+		log.Debug("Handling POST")
 		apiURLPost(backend, w, r)
 	case "GET":
+		log.Debug("Handling GET")
 		apiURLGet(backend, w, r)
 	case "DELETE":
+		log.Debug("Handling DELETE")
 		apiURLDelete(backend, w, r)
 	default:
+		log.Warnf("Handling %s... to %s Strange. Fuzzer? Hacker?!", r.Method, r.URL.Path)
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }
@@ -290,8 +302,10 @@ func apiURL(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 func apiURLs(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
+		log.Debug("Handling GET")
 		apiURLsGet(backend, w, r)
 	default:
+		log.Warnf("Handling %s... to %s Strange. Fuzzer? Hacker?!", r.Method, r.URL.Path)
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}
 }

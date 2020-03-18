@@ -13,4 +13,4 @@ steps:
       - issue-version
     plugins:
       sendgrid-ops/docker#${DOCKER_PLUGIN_VERSION}:
-        image: 'docker.sendgrid.net/go-shorty'
+        image: 'docker.sendgrid.net/go-links'

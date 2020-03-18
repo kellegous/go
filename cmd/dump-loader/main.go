@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -35,7 +35,16 @@ type routesDump struct {
 type route struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
-	Hits int    `json:"hits"`
+	Hits string `json:"hits"`
+}
+
+func init() {
+	// Initialize logging
+	formatter := &log.JSONFormatter{
+		TimestampFormat: "2006-02-01 15:04:05",
+	}
+	log.SetFormatter(formatter)
+	log.SetLevel(log.DebugLevel)
 }
 
 func main() {

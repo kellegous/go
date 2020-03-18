@@ -3,11 +3,11 @@ module github.com/kellegous/go
 go 1.13
 
 require (
-	cloud.google.com/go v0.38.0
+	github.com/golang/protobuf v1.3.3 // indirect
+	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.5.0
 	github.com/syndtr/goleveldb v1.0.0
-	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-	google.golang.org/api v0.20.0
-	google.golang.org/grpc v1.28.0
+	golang.org/x/sys v0.0.0-20200317113312-5766fd39f98d // indirect
+	golang.org/x/text v0.3.2 // indirect
 )
