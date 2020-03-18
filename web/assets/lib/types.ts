@@ -2,6 +2,7 @@ interface Route {
 	name: string;
 	url: string;
 	time: string;
+	hits: string;
 }
 
 interface Msg {

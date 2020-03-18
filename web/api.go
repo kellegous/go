@@ -76,10 +76,11 @@ func validateURL(r *http.Request, s string) error {
 }
 
 func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	var req struct {
-		URL string `json:"url"`
+		URL  string `json:"url"`
+		Hits int    `json:"hits"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -118,6 +119,7 @@ func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 	rt := internal.Route{
 		URL:  req.URL,
 		Time: time.Now(),
+		Hits: req.Hits + 1,
 	}
 
 	if err := backend.Put(ctx, p, &rt); err != nil {
@@ -129,7 +131,7 @@ func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 }
 
 func apiURLGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
 		writeJSONError(w, "no name given", http.StatusBadRequest)
@@ -152,7 +154,7 @@ func apiURLGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) 
 }
 
 func apiURLDelete(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/api/url/", r.URL.Path)
+	p, _ := parseName("/api/url/", r.URL.Path)
 
 	if p == "" {
 		writeJSONError(w, "name required", http.StatusBadRequest)

@@ -13,7 +13,7 @@ type adminHandler struct {
 }
 
 func adminGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/admin/", r.URL.Path)
+	p, _ := parseName("/.hidden_adminz/", r.URL.Path)
 
 	if p == "" {
 		writeJSONOk(w)

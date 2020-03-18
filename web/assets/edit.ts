@@ -5,8 +5,8 @@
 namespace go {
     // Get the OS-specific shortcut key for copying.
     var copyKey = () => navigator.userAgent.indexOf('Macintosh') >= 0
-        ? '⌘-C'
-        : 'Ctrl-C';
+        ? '⌘C (copy)'
+        : 'Ctrl+C';
 
     // Extract the name from the page location.
     var nameFrom = (uri: string) => {
@@ -59,7 +59,8 @@ namespace go {
                 }
 
                 var url = route.url || '',
-                    name = route.name || '';
+                    name = route.name || '',
+                    hits = route.hits || '';
                 if (url) {
                     history.replaceState({}, null, '/edit/' + name);
                     showLink(name);

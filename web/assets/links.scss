@@ -1,11 +1,12 @@
 @import "lib/global";
 
 .links {
-    width: 800px;
+    width: 65%;
     margin: 0 auto;
+    overflow: hidden;
 
     a {
-        color: #09f;
+        color: #03a9f4;
         text-decoration: none;
 
         &:hover {
@@ -14,14 +15,18 @@
     }
 
     .full-url {
+        font-size: 16px;
         color: #ddd;
-        text-shadow: 1px 1px 0 #fff;
     }
 }
 
 .links h1 {
-    color: #333;
+    color: #0199ff;
     margin-bottom: 40px;
+
+    &:hover {
+        opacity: 0.6;
+    }
 }
 
 .links ul {
@@ -31,4 +36,12 @@
 
 .links ul li {
     margin-bottom: 20px;
+}
+
+div.hits {
+    color: #9e9e9e;
+
+    &:hover {
+        opacity: 0.6;
+    }
 }

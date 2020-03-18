@@ -6,18 +6,18 @@ DST = $(patsubst %.scss,%.css,$(patsubst %.ts,%.js,$(subst web/assets,.build/ass
 ALL: web/bindata.go
 
 .build/bin/go-bindata:
-	GOPATH=$(shell pwd)/.build go get github.com/jteeuwen/go-bindata/...
+	GOPATH=$(shell pwd)/.build go get github.com/jteeuwen/go-bindata/...@6025e8de66
 
 .build/assets:
 	mkdir -p $@
 
 .build/assets/%.css: web/assets/%.scss
-	sass --no-cache --sourcemap=none --style=compressed $< $@
+	sass --no-source-map --style=compressed $< $@
 
 .build/assets/%.js: web/assets/%.ts
 	$(eval TMP := $(shell mktemp))
-	tsc --out $(TMP) $< 
-	closure-compiler --js $(TMP) --js_output_file $@
+	tsc --out $(TMP) $<
+	npx google-closure-compiler --js $(TMP) --js_output_file $@
 	rm -f $(TMP)
 
 .build/assets/%: web/assets/%

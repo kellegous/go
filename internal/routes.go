@@ -12,6 +12,7 @@ import (
 type Route struct {
 	URL  string    `json:"url"`
 	Time time.Time `json:"time"`
+	Hits int       `json:"hits"` // TODO(sgarf): Implement hit counting
 }
 
 // RouteIterator allows iteration of the named routes in the store.
@@ -25,6 +26,7 @@ type RouteIterator interface {
 	Release()
 }
 
+// ErrRouteNotFound ...
 var ErrRouteNotFound = errors.New("route not found")
 
 // Serialize this Route into the given Writer.
@@ -54,5 +56,6 @@ func (o *Route) Read(r io.Reader) error {
 
 	o.URL = string(b)
 	o.Time = time.Unix(0, t)
+	// o.Hits = 32
 	return nil
 }

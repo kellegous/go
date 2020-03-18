@@ -46,7 +46,7 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
 func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/", r.URL.Path)
+	p, s := parseName("/", r.URL.Path)
 	if p == "" {
 		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
@@ -65,10 +65,10 @@ func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 		log.Panic(err)
 	}
 
+	// log.Printf("Hits: %v", rt.Hits)
 	http.Redirect(w, r,
-		rt.URL,
+		rt.URL+s,
 		http.StatusTemporaryRedirect)
-
 }
 
 func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
@@ -109,7 +109,7 @@ func ListenAndServe(backend backend.Backend) error {
 		getDefault(backend, w, r)
 	})
 	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
-		p := parseName("/edit/", r.URL.Path)
+		p, _ := parseName("/edit/", r.URL.Path)
 
 		// if this is a banned name, just redirect to the local URI. That'll show em.
 		if isBannedName(p) {
@@ -129,12 +129,12 @@ func ListenAndServe(backend backend.Backend) error {
 		fmt.Fprintln(w, version)
 	})
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "👍")
+		fmt.Fprintln(w, "OK")
 	})
 
 	// TODO(knorton): Remove the admin handler.
 	if admin {
-		mux.Handle("/admin/", &adminHandler{backend})
+		mux.Handle("/.hidden_adminz/", &adminHandler{backend})
 	}
 
 	return http.ListenAndServe(addr, mux)

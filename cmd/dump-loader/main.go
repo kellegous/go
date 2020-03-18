@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	apiPath = "%s://%s:%s/api/url/%s"
+	apiPath  = "%s://%s:%s/api/url/%s"
+	urlsPath = "%s://%s:%s/api/urls/?include-generated-names=true"
 )
 
 type config struct {
@@ -22,25 +23,28 @@ type config struct {
 	host     string
 	port     string
 	dumpFile string
+	dump     bool
 }
 
-type RoutesDump struct {
+type routesDump struct {
 	OK     bool    `json:"ok"`
-	Routes []Route `json:"routes"`
+	Routes []route `json:"routes"`
 	Next   string  `json:"next"`
 }
 
-type Route struct {
+type route struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
+	Hits int    `json:"hits"`
 }
 
 func main() {
 	c := config{}
-	pflag.StringVar(&c.proto, "protocol", "https", "protocol to use. Only HTTP or HTTPS supported")
+	pflag.StringVar(&c.proto, "protocol", "http", "protocol to use (HTTP or HTTPS)")
 	pflag.StringVar(&c.host, "host", "localhost", "host to post data to")
 	pflag.StringVar(&c.port, "port", "8067", "port on host to talk to")
-	pflag.StringVar(&c.dumpFile, "file", "", "dump file to load from")
+	pflag.StringVar(&c.dumpFile, "file", "", "dump file to load from (or save to if --dump given)")
+	pflag.BoolVar(&c.dump, "dump", false, "dump links from the api")
 	pflag.Parse()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
@@ -55,35 +59,60 @@ func main() {
 		log.Fatal("dump file must be specified with --file argument")
 	}
 
-	var d RoutesDump
+	if c.dump {
+		req := fmt.Sprintf(urlsPath, c.proto, c.host, c.port)
+		resp, err := http.Get(req)
+		if err != nil {
+			log.Printf("error making get request: %s", err.Error())
+			return
+		}
+		body, readErr := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		if readErr != nil {
+			log.Fatal(readErr)
+		}
+		err = ioutil.WriteFile(c.dumpFile, body, 0644)
+		if err != nil {
+			log.Println("error dumping JSON from API")
+			return
+		}
+
+		return
+	}
+
+	var d routesDump
 
 	f, err := ioutil.ReadFile(c.dumpFile)
 
 	if err != nil {
-		log.Printf("error reading dump file : %s\n", c.dumpFile)
+		log.Printf("error reading dump file: %s\n", c.dumpFile)
 		log.Fatal(err)
 	}
 
+	log.Println("Reading file...")
 	err = json.Unmarshal(f, &d)
 
 	if err != nil {
-		log.Printf("error parsing dump file : %s\n", c.dumpFile)
+		log.Printf("error parsing dump file: %s\n", c.dumpFile)
 		log.Fatal(err)
 	}
+	log.Printf("Parsed dump: %+v", d)
 
 	for _, v := range d.Routes {
+		log.Println("In for loop...")
 		req := fmt.Sprintf(apiPath, c.proto, c.host, c.port, v.Name)
+		log.Printf("Request: %+v", req)
 		p, err := json.Marshal(&v)
 		if err != nil {
-			log.Printf("error marshalling data for link : %s\n", v.Name)
+			log.Printf("error marshalling data for link: %s\n", v.Name)
 			log.Println(err)
 			continue
 		}
 		resp, err := http.Post(req, "application/json", bytes.NewReader(p))
 		if err != nil {
-			log.Printf("error POSTing link : %s %s\n", v.Name, err.Error())
+			log.Printf("error POSTing link: %s %s\n", v.Name, err.Error())
 		} else {
-			log.Printf("POSTed short link (%s) : %s\n", resp.Status, v.Name)
+			log.Printf("POSTed short link (%s): %s\n", resp.Status, v.Name)
 			resp.Body.Close()
 		}
 	}
