@@ -53,9 +53,9 @@ namespace xhr {
 
 	export var get = (url: string) => {
 		return create('GET', url);
-	}
+	};
 
 	export var post = (url: string) => {
 		return create('POST', url);
-	}
+	};
 }

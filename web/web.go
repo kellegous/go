@@ -101,6 +101,25 @@ func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getLinks2(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+	t, err := templateFromAssetFn(links2Html)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+
+	rts, err := backend.GetAll(ctx)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	if err := t.Execute(w, rts); err != nil {
+		log.Panic(err)
+	}
+}
+
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
 func ListenAndServe(backend backend.Backend) error {
@@ -142,6 +161,9 @@ func ListenAndServe(backend backend.Backend) error {
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
 		getLinks(backend, w, r)
 	})
+	mux.HandleFunc("/links2/", func(w http.ResponseWriter, r *http.Request) {
+		getLinks2(backend, w, r)
+	})
 	// Server static assets
 	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
 		serveAsset(w, r, r.URL.Path[len("/s/"):])
@@ -149,6 +171,11 @@ func ListenAndServe(backend backend.Backend) error {
 	// Serve version string... TODO(sgarf): remove?
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
+	})
+	// Serve instructions!
+	htmlString := "<html><body bgcolor='#393939' text='#9e9e9e'>start by visiting /edit/&lt;yourKeyword&gt;. message <a style='color:#03a9f4; text-decoration:none;' href='slack://channel?team=T02874Q7H&id=CF26YT1HT'>@garf</a> on slack for help.</body></html>"
+	mux.HandleFunc("/about", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, htmlString)
 	})
 	// Serve healthcheck endpoint
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {

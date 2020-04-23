@@ -19,7 +19,7 @@ One slight difference between this go service and Google's is that this one is a
 capable of generating short links for you.
 
 ## Installation
-This tool is written in Go (ironically) and can be easily installed  and started
+This tool is written in Go (ironically) and can be easily installed and started
 with the following commands.
 
 ```

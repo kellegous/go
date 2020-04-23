@@ -1,0 +1,81 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    certmanager.k8s.io/acme-challenge-type: dns01
+    certmanager.k8s.io/acme-dns01-provider: route53
+    certmanager.k8s.io/cluster-issuer: k8s.sendgrid.net
+    nginx.ingress.kubernetes.io/server-alias: go
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+  labels:
+    app: go-links
+  name: go-links
+  namespace: eng-opseng
+spec:
+  rules:
+    - host: go.k8s.sendgrid.net
+      http:
+        paths:
+          - backend:
+              serviceName: go-links
+              servicePort: frontend
+            path: /
+  tls:
+    - hosts:
+        - go.k8s.sendgrid.net
+      secretName: go-shorty-ssl-cert
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: go-links
+  name: go-links
+  namespace: eng-opseng
+spec:
+  ports:
+    - name: frontend
+      port: 8067
+      protocol: TCP
+      targetPort: 8067
+  selector:
+    app: go-links
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: go-links
+  name: go-links
+  namespace: eng-opseng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-links
+  template:
+    metadata:
+      labels:
+        app: go-links
+    spec:
+      containers:
+        - args:
+            - --admin
+          image: stgarf/go-links:latest
+          imagePullPolicy: Always
+          name: go-links
+          resources:
+            limits:
+              cpu: '250m'
+              memory: 64Mi
+          volumeMounts:
+            - mountPath: /data/
+              name: shortlinks-storage
+      volumes:
+        - emptyDir: {}
+          name: shortlinks-storage

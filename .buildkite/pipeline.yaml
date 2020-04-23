@@ -1,16 +1,16 @@
 dag: true
 
 steps:
-  - label: issue-version
-    key: issue-version
-    plugins:
-      sendgrid/chronicle#${CHRONICLE_PLUGIN_VERSION}:
-        action: issue-version
+	- label: issue-version
+		key: issue-version
+		plugins:
+			sendgrid/chronicle#${CHRONICLE_PLUGIN_VERSION}:
+				action: issue-version
 
-  - label: ':docker: build'
-    key: build-docker-image
-    depends_on:
-      - issue-version
-    plugins:
-      sendgrid-ops/docker#${DOCKER_PLUGIN_VERSION}:
-        image: 'docker.sendgrid.net/go-links'
+	- label: ':docker: build'
+		key: build-docker-image
+		depends_on:
+			- issue-version
+		plugins:
+			sendgrid-ops/docker#${DOCKER_PLUGIN_VERSION}:
+				image: 'docker.sendgrid.net/go-links'

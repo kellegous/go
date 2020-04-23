@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Active Go Links</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<link href="/s/links.css" rel="stylesheet" />
+	</head>
+	<body>
+		<!-- <div class="links">
+			<h1>Active Go Links</h1>
+			<h5>
+				This page shows all registred links, their redirection location, and
+				number of hits.
+			</h5>
+			<ul>
+				{{ range $key, $route := . }}
+				<li>
+					<a href="/edit/{{ $key }}"><div id="edit">&nbsp;</div></a><span class="keyword">go/{{ $key }}</span> ~> to <a href="{{ $route.URL }}" class="full-url">{{ $route.URL }}</a>
+					<br /><div class="hits">Hits: {{ $route.Hits }}</div>
+				</li>
+				{{ end }}
+			</ul>
+		</div> -->
+		<div class="links">
+			<div class="divTable">
+				<div class="divTableBody">
+					<div class="divTableRow">
+						<div class="divTableCell">Go Link</div>
+						<div class="divTableCell">~~></div>
+						<div class="divTableCell">Target Location</div>
+						<div class="divTableCell">Owner</div>
+						<div class="divTableCell">Hits</div>
+						<div class="divTableCell">Edit || Delete</div>
+					</div>
+					{{ range $key, $route := . }}
+					<div class="divTableRow">
+						<div class="keyword">{{ $key }}</div>
+						<div class="divTableCell">~~></div>
+						<div class="full-url">{{ $route.URL }}</div>
+						<div class="divTableCell">OWNER</div>
+						<div class="hits">{{ $route.Hits }}</div>
+						<div class="divTableCell">
+							<a href="/edit/{{ $key }}"><div id="edit">&nbsp;</div></a> ||
+							Delete
+						</div>
+					</div>
+					{{ end }}
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

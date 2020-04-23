@@ -13,8 +13,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func init() {
+	// Initialize logging
+	formatter := &log.JSONFormatter{
+		TimestampFormat: "2006-02-01 15:04:05",
+	}
+	log.SetFormatter(formatter)
+	log.SetLevel(log.DebugLevel)
+}
+
 func main() {
-	pflag.String("addr", "127.0.0.1:8067", "default bind address")
+	pflag.String("addr", ":8067", "default bind address")
 	pflag.Bool("admin", false, "allow admin-level requests, e.g. /.hidden_adminz/dumps")
 	pflag.String("backend", "leveldb", "backing store to use - 'leveldb' is supported")
 	pflag.String("data", "data", "the location of the leveldb data directory")
