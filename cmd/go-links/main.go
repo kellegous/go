@@ -7,10 +7,10 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/kellegous/go/backend"
-	"github.com/kellegous/go/backend/leveldb"
-	"github.com/kellegous/go/web"
 	log "github.com/sirupsen/logrus"
+	"github.com/stgarf/go-links/backend"
+	"github.com/stgarf/go-links/backend/leveldb"
+	"github.com/stgarf/go-links/web"
 )
 
 func init() {

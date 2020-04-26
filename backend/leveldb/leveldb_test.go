@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kellegous/go/internal"
+	"github.com/stgarf/go-links/internal"
 )
 
 func TestGetPut(t *testing.T) {

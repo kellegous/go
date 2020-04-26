@@ -13,8 +13,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kellegous/go/backend"
-	"github.com/kellegous/go/internal"
+	"github.com/stgarf/go-links/backend"
+	"github.com/stgarf/go-links/internal"
 )
 
 const (
@@ -95,13 +95,13 @@ func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 
 	if req.URL == "" {
 		writeJSONError(w, "url required", http.StatusBadRequest)
-		log.Debugf("Url required: %+v", r.URL.RequestURI)
+		log.Debugf("Url required: %+v", r.URL.RequestURI())
 		return
 	}
 
 	if isBannedName(p) {
 		writeJSONError(w, "name cannot be used", http.StatusBadRequest)
-		log.Debugf("Banned named attempted: %+v", r.URL.RequestURI)
+		log.Debugf("Banned named attempted: %+v", r.URL.RequestURI())
 		return
 	}
 
