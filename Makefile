@@ -6,13 +6,13 @@ DST = $(patsubst %.scss,%.css,$(patsubst %.ts,%.js,$(subst web/assets,.build/ass
 ALL: web/bindata.go
 
 .build/bin/go-bindata:
-	GOPATH=$(shell pwd)/.build go get github.com/jteeuwen/go-bindata/...
+	GOPATH=$(shell pwd)/.build go get github.com/a-urth/go-bindata/...
 
 .build/assets:
 	mkdir -p $@
 
 .build/assets/%.css: web/assets/%.scss
-	sass --no-cache --sourcemap=none --style=compressed $< $@
+	sass --no-source-map --style=compressed $< $@
 
 .build/assets/%.js: web/assets/%.ts
 	$(eval TMP := $(shell mktemp))
