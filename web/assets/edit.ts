@@ -17,7 +17,7 @@ namespace go {
     // Called with the window resizes.
     var windowDidResize = () => {
         var rect = $frm.getBoundingClientRect();
-        dom.css($frm, 'margin-top', (window.innerHeight/3 - rect.height/2) + 'px');
+        dom.css($frm, 'margin-top', (window.innerHeight / 3 - rect.height / 2) + 'px');
     };
 
     // Called when the URL changes.
@@ -44,7 +44,7 @@ namespace go {
             url = ($url.value || '').trim();
 
         xhr.post('/api/url/' + name)
-            .sendJSON({url: url})
+            .sendJSON({ url: url })
             .onDone((data: string, status: number) => {
                 var msg = <MsgRoute>JSON.parse(data);
                 if (!msg.ok) {
@@ -59,10 +59,11 @@ namespace go {
                 }
 
                 var url = route.url || '',
-                    name = route.name || '';
+                    name = route.name || '',
+                    host = route.source_host || '';
                 if (url) {
                     history.replaceState({}, null, '/edit/' + name);
-                    showLink(name);
+                    showLink(name, host);
                 }
             });
     };
@@ -104,8 +105,14 @@ namespace go {
         dom.css($cmp, 'transform', 'scaleY(1)');
     };
 
-    var showLink = (name: string) => {
-        var lnk = location.origin + '/' + name;
+    var showLink = (name: string, src: string) => {
+        var lnk = '/' + name;
+
+        if (src != '') {
+            lnk = src + lnk;
+        } else {
+            lnk = location.origin + lnk;
+        }
 
         $cmp.textContent = '';
         $cmp.classList.remove('fuck');
