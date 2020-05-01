@@ -96,14 +96,15 @@ func ListenAndServe(backend backend.Backend) error {
 	addr := viper.GetString("addr")
 	admin := viper.GetBool("admin")
 	version := viper.GetString("version")
+	host := viper.GetString("host")
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(backend, w, r)
+		apiURL(backend, host, w, r)
 	})
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(backend, w, r)
+		apiURLs(backend, host, w, r)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		getDefault(backend, w, r)
