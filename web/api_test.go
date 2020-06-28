@@ -72,7 +72,7 @@ func (e *env) call(method, path string, body io.Reader) (*mockResponse, error) {
 	return res, nil
 }
 
-func newEnv() (*env, error) {
+func newEnv(host string) (*env, error) {
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func newEnv() (*env, error) {
 
 	mux := http.NewServeMux()
 
-	Setup(mux, backend)
+	Setup(mux, backend, host)
 
 	return &env{
 		mux:     mux,
@@ -95,8 +95,8 @@ func newEnv() (*env, error) {
 	}, nil
 }
 
-func needEnv(t *testing.T) *env {
-	e, err := newEnv()
+func needEnv(t *testing.T, host string) *env {
+	e, err := newEnv(host)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,10 +137,14 @@ func mustBeRouteOf(t *testing.T, rt *internal.Route, url string) {
 	}
 }
 
-func mustBeNamedRouteOf(t *testing.T, rt *routeWithName, name, url string) {
+func mustBeNamedRouteOf(t *testing.T, rt *routeWithName, name, url string, host string) {
 	mustBeRouteOf(t, rt.Route, url)
 	if rt.Name != name {
 		t.Fatalf("expected name of %s, got %s", name, rt.Name)
+	}
+
+	if host != "" && rt.SourceHost != host {
+		t.Fatalf("expected source of %s, got %s", host, rt.SourceHost)
 	}
 }
 
@@ -167,7 +171,7 @@ func mustHaveStatus(t *testing.T, res *mockResponse, status int) {
 }
 
 func TestAPIGetNotFound(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	names := map[string]int{
@@ -194,7 +198,7 @@ func TestAPIGetNotFound(t *testing.T) {
 }
 
 func TestAPIPutThenGet(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	res, err := e.post("/api/url/xxx", &urlReq{
@@ -212,7 +216,7 @@ func TestAPIPutThenGet(t *testing.T) {
 	}
 
 	mustBeOk(t, pm.Ok)
-	mustBeNamedRouteOf(t, pm.Route, "xxx", "http://ex.com/")
+	mustBeNamedRouteOf(t, pm.Route, "xxx", "http://ex.com/", "")
 
 	res, err = e.get("/api/url/xxx")
 	if err != nil {
@@ -227,11 +231,49 @@ func TestAPIPutThenGet(t *testing.T) {
 	}
 
 	mustBeOk(t, gm.Ok)
-	mustBeNamedRouteOf(t, pm.Route, "xxx", "http://ex.com/")
+	mustBeNamedRouteOf(t, pm.Route, "xxx", "http://ex.com/", "")
+}
+
+func TestAPIPutThenGetWithHost(t *testing.T) {
+	host := "http://test.com"
+	e := needEnv(t, host)
+	defer e.destroy()
+
+	res, err := e.post("/api/url/xxx", &urlReq{
+		URL: "http://ex.com/",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mustHaveStatus(t, res, http.StatusOK)
+
+	var pm msgRoute
+	if err := json.NewDecoder(res).Decode(&pm); err != nil {
+		t.Fatal(err)
+	}
+
+	mustBeOk(t, pm.Ok)
+	mustBeNamedRouteOf(t, pm.Route, "xxx", "http://ex.com/", host)
+
+	res, err = e.get("/api/url/xxx")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mustHaveStatus(t, res, http.StatusOK)
+
+	var gm msgRoute
+	if err := json.NewDecoder(res).Decode(&gm); err != nil {
+		t.Fatal(err)
+	}
+
+	mustBeOk(t, gm.Ok)
+	mustBeNamedRouteOf(t, pm.Route, "xxx", "http://ex.com/", host)
 }
 
 func TestBadPuts(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	var m msgErr
@@ -271,7 +313,7 @@ func TestBadPuts(t *testing.T) {
 }
 
 func TestAPIDel(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -306,7 +348,7 @@ func TestAPIDel(t *testing.T) {
 }
 
 func TestAPIPutThenGetAuto(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	res, err := e.post("/api/url/", &urlReq{URL: "http://b.com/"})
@@ -335,7 +377,7 @@ func TestAPIPutThenGetAuto(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustBeOk(t, bm.Ok)
-	mustBeNamedRouteOf(t, bm.Route, am.Route.Name, "http://b.com/")
+	mustBeNamedRouteOf(t, bm.Route, am.Route.Name, "http://b.com/", "")
 }
 
 func getInPages(e *env, params url.Values) ([][]*routeWithName, error) {
@@ -376,7 +418,7 @@ type listTest struct {
 }
 
 func TestAPIList(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	rts := []*routeWithName{
@@ -545,7 +587,7 @@ func TestAPIList(t *testing.T) {
 }
 
 func TestBadList(t *testing.T) {
-	e := needEnv(t)
+	e := needEnv(t, "")
 	defer e.destroy()
 
 	tests := map[string]int{

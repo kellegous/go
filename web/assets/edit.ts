@@ -63,10 +63,11 @@ namespace go {
 				}
 
 				var url = route.url || '',
-					name = route.name || '';
+					name = route.name || '',
+					host = route.source_host || '';
 				if (url) {
 					history.replaceState({}, null, '/edit/' + name);
-					showLink(name);
+					showLink(name, host);
 				}
 			});
 	};
@@ -110,8 +111,14 @@ namespace go {
 	};
 
 	// This function shows the keyword link in quick-copy dropdown
-	var showLink = (name: string) => {
-		var lnk = location.origin + '/' + name;
+	var showLink = (name: string, src: string) => {
+		var lnk = '/' + name;
+
+		if (src != '') {
+			lnk = src + lnk;
+		} else {
+			lnk = location.origin + lnk;
+		}
 
 		// Create a node text element and add class="link"
 		$cmp.textContent = '';

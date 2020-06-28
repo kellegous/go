@@ -3,6 +3,7 @@ interface Route {
 	url: string;
 	time: string;
 	hits: string;
+	source_host: string;
 }
 
 interface Msg {

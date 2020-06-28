@@ -38,8 +38,14 @@
 		});
 	};
 
-	var showLink = function (name) {
-		var lnk = location.origin + '/' + name;
+	var showLink = function (name, src) {
+        var lnk = '/' + name;
+
+        if (src != '') {
+            lnk = src + lnk;
+        } else {
+            lnk = location.origin + lnk;
+        }
 
 		$cmp.text('').removeClass('fuck').addClass('link');
 
@@ -111,10 +117,11 @@
 			}
 
 			var url = route.url || '',
-				name = route.name || '';
+				name = route.name || '',
+			    src = route.source_host || '';
 			if (url) {
 				history.replaceState({}, null, '/edit/' + name);
-				showLink(name);
+				showLink(name, src);
 			}
 		});
 	});

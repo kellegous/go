@@ -126,16 +126,17 @@ func ListenAndServe(backend backend.Backend) error {
 	addr := viper.GetString("addr")
 	admin := viper.GetBool("admin")
 	version := viper.GetString("version")
+	host := viper.GetString("host")
 
 	mux := http.NewServeMux()
 
 	// Return requested keyword in json
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(backend, w, r)
+		apiURL(backend, host, w, r)
 	})
 	// Return all keywords in json
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(backend, w, r)
+		apiURLs(backend, host, w, r)
 	})
 	// Serve the index page
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

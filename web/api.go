@@ -78,7 +78,7 @@ func validateURL(r *http.Request, s string) error {
 	return nil
 }
 
-func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+func apiURLPost(backend backend.Backend, host string, w http.ResponseWriter, r *http.Request) {
 	log.Printf("POST API request for url %s from %s:", r.URL.Path, r.RemoteAddr)
 	p, _ := parseName("/api/url/", r.URL.Path)
 
@@ -134,12 +134,13 @@ func apiURLPost(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	writeJSONRoute(w, p, &rt)
+	writeJSONRoute(w, p, &rt, host)
 }
 
-func apiURLGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+func apiURLGet(backend backend.Backend, host string, w http.ResponseWriter, r *http.Request) {
 	p, _ := parseName("/api/url/", r.URL.Path)
 	log.Debugf("GET API request for url %s from %s:", r.URL.Path, r.RemoteAddr)
+
 	if p == "" {
 		writeJSONError(w, "no name given", http.StatusBadRequest)
 		return
@@ -157,7 +158,7 @@ func apiURLGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSONRoute(w, p, rt)
+	writeJSONRoute(w, p, rt, host)
 }
 
 func apiURLDelete(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
@@ -217,7 +218,7 @@ func parseBool(v string, def bool) (bool, error) {
 	return false, errors.New("invalid boolean value")
 }
 
-func apiURLsGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+func apiURLsGet(backend backend.Backend, host string, w http.ResponseWriter, r *http.Request) {
 	log.Printf("GET API request (ALL URLS) for url %s from %s", r.URL.Path, r.RemoteAddr)
 	c, err := parseCursor(r.FormValue("cursor"))
 	if err != nil {
@@ -260,10 +261,16 @@ func apiURLsGet(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 			}
 		}
 
-		res.Routes = append(res.Routes, &routeWithName{
+		r := routeWithName{
 			Name:  iter.Name(),
 			Route: iter.Route(),
-		})
+		}
+
+		if host != "" {
+			r.SourceHost = host
+		}
+
+		res.Routes = append(res.Routes, &r)
 
 		if len(res.Routes) == lim {
 			break
@@ -282,14 +289,14 @@ func apiURLsGet(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 	writeJSON(w, &res, http.StatusOK)
 }
 
-func apiURL(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+func apiURL(backend backend.Backend, host string, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		log.Debug("Handling POST")
-		apiURLPost(backend, w, r)
+		apiURLPost(backend, host, w, r)
 	case "GET":
 		log.Debug("Handling GET")
-		apiURLGet(backend, w, r)
+		apiURLGet(backend, host, w, r)
 	case "DELETE":
 		log.Debug("Handling DELETE")
 		apiURLDelete(backend, w, r)
@@ -299,11 +306,11 @@ func apiURL(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func apiURLs(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+func apiURLs(backend backend.Backend, host string, w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		log.Debug("Handling GET")
-		apiURLsGet(backend, w, r)
+		apiURLsGet(backend, host, w, r)
 	default:
 		log.Warnf("Handling %s... to %s Strange. Fuzzer? Hacker?!", r.Method, r.URL.Path)
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
@@ -311,12 +318,12 @@ func apiURLs(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 }
 
 // Setup ...
-func Setup(m *http.ServeMux, backend backend.Backend) {
+func Setup(m *http.ServeMux, backend backend.Backend, host string) {
 	m.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(backend, w, r)
+		apiURL(backend, host, w, r)
 	})
 
 	m.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(backend, w, r)
+		apiURLs(backend, host, w, r)
 	})
 }
