@@ -90,6 +90,37 @@ func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Enforces security policies for incoming web requests.
+func enforcePolicy(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet, http.MethodHead, http.MethodOptions:
+			break
+		case http.MethodPost:
+			// prevent CSRF
+			contentType := r.Header.Get("Content-Type")
+			if contentType != "application/json;charset=UTF-8" {
+				http.Error(w,
+					"Content-Type header for POST requests must be \"application/json;charset=UTF-8\"",
+					http.StatusForbidden)
+				return
+			}
+			fallthrough
+		default:
+			// prevent CSRF
+			requestedWith := r.Header.Get("X-Requested-With")
+			if requestedWith == "" {
+				http.Error(w,
+					"X-Requested-With header must be non-empty",
+					http.StatusForbidden)
+				return
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
 func ListenAndServe(backend backend.Backend) error {
@@ -138,5 +169,7 @@ func ListenAndServe(backend backend.Backend) error {
 		mux.Handle("/admin/", &adminHandler{backend})
 	}
 
-	return http.ListenAndServe(addr, mux)
+	handler := enforcePolicy(mux)
+
+	return http.ListenAndServe(addr, handler)
 }

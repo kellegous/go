@@ -48,7 +48,9 @@ namespace xhr {
 	export var create = (method: string, url: string) => {
 		var xhr = new XMLHttpRequest();
 		xhr.open(method, url, true);
-		return new Req(xhr);
+
+		var req = new Req(xhr);
+		return req.withHeader('X-Requested-With', 'XMLHttpRequest');
 	};
 
 	export var get = (url: string) => {
