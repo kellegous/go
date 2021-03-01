@@ -21,7 +21,6 @@ import (
 	"cloud.google.com/go/internal/trace"
 	gax "github.com/googleapis/gax-go/v2"
 	pb "google.golang.org/genproto/googleapis/firestore/v1"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -117,11 +116,13 @@ func (c *Client) RunTransaction(ctx context.Context, f func(context.Context, *Tr
 	// TODO(jba): get backoff time from gRPC trailer metadata? See
 	// extractRetryDelay in https://code.googlesource.com/gocloud/+/master/spanner/retry.go.
 	for i := 0; i < t.maxAttempts; i++ {
+		t.ctx = trace.StartSpan(t.ctx, "cloud.google.com/go/firestore.Client.BeginTransaction")
 		var res *pb.BeginTransactionResponse
 		res, err = t.c.c.BeginTransaction(t.ctx, &pb.BeginTransactionRequest{
 			Database: db,
 			Options:  txOpts,
 		})
+		trace.EndSpan(t.ctx, err)
 		if err != nil {
 			return err
 		}
@@ -137,14 +138,17 @@ func (c *Client) RunTransaction(ctx context.Context, f func(context.Context, *Tr
 			// Prefer f's returned error to rollback error.
 			return err
 		}
+		t.ctx = trace.StartSpan(t.ctx, "cloud.google.com/go/firestore.Client.Commit")
 		_, err = t.c.c.Commit(t.ctx, &pb.CommitRequest{
 			Database:    t.c.path(),
 			Writes:      t.writes,
 			Transaction: t.id,
 		})
+		trace.EndSpan(t.ctx, err)
+
 		// If a read-write transaction returns Aborted, retry.
 		// On success or other failures, return here.
-		if t.readOnly || grpc.Code(err) != codes.Aborted {
+		if t.readOnly || status.Code(err) != codes.Aborted {
 			// According to the Firestore team, we should not roll back here
 			// if err != nil. But spanner does.
 			// See https://code.googlesource.com/gocloud/+/master/spanner/transaction.go#740.
@@ -229,8 +233,9 @@ func (t *Transaction) Documents(q Queryer) *DocumentIterator {
 		t.readAfterWrite = true
 		return &DocumentIterator{err: errReadAfterWrite}
 	}
+	query := q.query()
 	return &DocumentIterator{
-		iter: newQueryDocumentIterator(t.ctx, q.query(), t.id),
+		iter: newQueryDocumentIterator(t.ctx, query, t.id), q: query,
 	}
 }
 

@@ -18,11 +18,12 @@ import (
 	"context"
 
 	vkit "cloud.google.com/go/firestore/apiv1"
+	"cloud.google.com/go/internal/trace"
 	"google.golang.org/api/iterator"
 	pb "google.golang.org/genproto/googleapis/firestore/v1"
 )
 
-// DocumentRefIterator is an interator over DocumentRefs.
+// DocumentRefIterator is an iterator over DocumentRefs.
 type DocumentRefIterator struct {
 	client   *Client
 	it       *vkit.DocumentIterator
@@ -33,6 +34,9 @@ type DocumentRefIterator struct {
 }
 
 func newDocumentRefIterator(ctx context.Context, cr *CollectionRef, tid []byte) *DocumentRefIterator {
+	ctx = trace.StartSpan(ctx, "cloud.google.com/go/firestore.ListDocuments")
+	defer func() { trace.EndSpan(ctx, nil) }()
+
 	client := cr.c
 	req := &pb.ListDocumentsRequest{
 		Parent:       cr.parentPath,

@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/internal/btree"
+	"cloud.google.com/go/internal/trace"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/api/iterator"
 	pb "google.golang.org/genproto/googleapis/firestore/v1"
@@ -43,10 +44,15 @@ type Query struct {
 	orders                 []order
 	offset                 int32
 	limit                  *wrappers.Int32Value
+	limitToLast            bool
 	startVals, endVals     []interface{}
 	startDoc, endDoc       *DocumentSnapshot
 	startBefore, endBefore bool
 	err                    error
+
+	// allDescendants indicates whether this query is for all collections
+	// that match the ID under the specified parentPath.
+	allDescendants bool
 }
 
 // DocumentID is the special field name representing the ID of a document
@@ -89,7 +95,8 @@ func (q Query) SelectPaths(fieldPaths ...FieldPath) Query {
 // A Query can have multiple filters.
 // The path argument can be a single field or a dot-separated sequence of
 // fields, and must not contain any of the runes "˜*/[]".
-// The op argument must be one of "==", "<", "<=", ">" or ">=".
+// The op argument must be one of "==", "!=", "<", "<=", ">", ">=",
+// "array-contains", "array-contains-any", "in" or "not-in".
 func (q Query) Where(path, op string, value interface{}) Query {
 	fp, err := parseDotSeparatedString(path)
 	if err != nil {
@@ -102,7 +109,8 @@ func (q Query) Where(path, op string, value interface{}) Query {
 
 // WherePath returns a new Query that filters the set of results.
 // A Query can have multiple filters.
-// The op argument must be one of "==", "<", "<=", ">" or ">=".
+// The op argument must be one of "==", "!=", "<", "<=", ">", ">=",
+// "array-contains", "array-contains-any", "in" or "not-in".
 func (q Query) WherePath(fp FieldPath, op string, value interface{}) Query {
 	q.filters = append(append([]filter(nil), q.filters...), filter{fp, op, value})
 	return q
@@ -120,8 +128,8 @@ const (
 )
 
 // OrderBy returns a new Query that specifies the order in which results are
-// returned. A Query can have multiple OrderBy/OrderByPath specifications. OrderBy
-// appends the specification to the list of existing ones.
+// returned. A Query can have multiple OrderBy/OrderByPath specifications.
+// OrderBy appends the specification to the list of existing ones.
 //
 // The path argument can be a single field or a dot-separated sequence of
 // fields, and must not contain any of the runes "˜*/[]".
@@ -156,10 +164,19 @@ func (q Query) Offset(n int) Query {
 	return q
 }
 
-// Limit returns a new Query that specifies the maximum number of results to return.
-// It must not be negative.
+// Limit returns a new Query that specifies the maximum number of first results
+// to return. It must not be negative.
 func (q Query) Limit(n int) Query {
 	q.limit = &wrappers.Int32Value{Value: trunc32(n)}
+	q.limitToLast = false
+	return q
+}
+
+// LimitToLast returns a new Query that specifies the maximum number of last
+// results to return. It must not be negative.
+func (q Query) LimitToLast(n int) Query {
+	q.limit = &wrappers.Int32Value{Value: trunc32(n)}
+	q.limitToLast = true
 	return q
 }
 
@@ -251,7 +268,10 @@ func (q Query) toProto() (*pb.StructuredQuery, error) {
 		}
 	}
 	p := &pb.StructuredQuery{
-		From:   []*pb.StructuredQuery_CollectionSelector{{CollectionId: q.collectionID}},
+		From: []*pb.StructuredQuery_CollectionSelector{{
+			CollectionId:   q.collectionID,
+			AllDescendants: q.allDescendants,
+		}},
 		Offset: q.offset,
 		Limit:  q.limit,
 	}
@@ -390,12 +410,11 @@ func (q *Query) fieldValuesToCursorValues(fieldValues []interface{}) ([]*pb.Valu
 }
 
 func (q *Query) docSnapshotToCursorValues(ds *DocumentSnapshot, orders []order) ([]*pb.Value, error) {
-	// TODO(jba): error if doc snap does not belong to the right collection.
 	vals := make([]*pb.Value, len(orders))
 	for i, ord := range orders {
 		if ord.isDocumentID() {
 			dp, qp := ds.Ref.Parent.Path, q.path
-			if dp != qp {
+			if !q.allDescendants && dp != qp {
 				return nil, fmt.Errorf("firestore: document snapshot for %s passed to query on %s", dp, qp)
 			}
 			vals[i] = &pb.Value{ValueType: &pb.Value_ReferenceValue{ds.Ref.Path}}
@@ -482,8 +501,16 @@ func (f filter) toProto() (*pb.StructuredQuery_Filter, error) {
 		op = pb.StructuredQuery_FieldFilter_GREATER_THAN_OR_EQUAL
 	case "==":
 		op = pb.StructuredQuery_FieldFilter_EQUAL
+	case "!=":
+		op = pb.StructuredQuery_FieldFilter_NOT_EQUAL
+	case "in":
+		op = pb.StructuredQuery_FieldFilter_IN
+	case "not-in":
+		op = pb.StructuredQuery_FieldFilter_NOT_IN
 	case "array-contains":
 		op = pb.StructuredQuery_FieldFilter_ARRAY_CONTAINS
+	case "array-contains-any":
+		op = pb.StructuredQuery_FieldFilter_ARRAY_CONTAINS_ANY
 	default:
 		return nil, fmt.Errorf("firestore: invalid operator %q", f.op)
 	}
@@ -560,7 +587,7 @@ func trunc32(i int) int32 {
 // Documents returns an iterator over the query's resulting documents.
 func (q Query) Documents(ctx context.Context) *DocumentIterator {
 	return &DocumentIterator{
-		iter: newQueryDocumentIterator(withResourceHeader(ctx, q.c.path()), &q, nil),
+		iter: newQueryDocumentIterator(withResourceHeader(ctx, q.c.path()), &q, nil), q: &q,
 	}
 }
 
@@ -568,6 +595,7 @@ func (q Query) Documents(ctx context.Context) *DocumentIterator {
 type DocumentIterator struct {
 	iter docIterator
 	err  error
+	q    *Query
 }
 
 // Unexported interface so we can have two different kinds of DocumentIterator: one
@@ -586,6 +614,9 @@ type docIterator interface {
 func (it *DocumentIterator) Next() (*DocumentSnapshot, error) {
 	if it.err != nil {
 		return nil, it.err
+	}
+	if it.q.limitToLast {
+		return nil, errors.New("firestore: queries that include limitToLast constraints cannot be streamed. Use DocumentIterator.GetAll() instead")
 	}
 	ds, err := it.iter.next()
 	if err != nil {
@@ -610,6 +641,25 @@ func (it *DocumentIterator) Stop() {
 // It is not necessary to call Stop on the iterator after calling GetAll.
 func (it *DocumentIterator) GetAll() ([]*DocumentSnapshot, error) {
 	defer it.Stop()
+
+	q := it.q
+	limitedToLast := q.limitToLast
+	if q.limitToLast {
+		// Flip order statements before posting a request.
+		for i := range q.orders {
+			if q.orders[i].dir == Asc {
+				q.orders[i].dir = Desc
+			} else {
+				q.orders[i].dir = Asc
+			}
+		}
+		// Swap cursors.
+		q.startVals, q.endVals = q.endVals, q.startVals
+		q.startDoc, q.endDoc = q.endDoc, q.startDoc
+		q.startBefore, q.endBefore = q.endBefore, q.startBefore
+
+		q.limitToLast = false
+	}
 	var docs []*DocumentSnapshot
 	for {
 		doc, err := it.Next()
@@ -620,6 +670,14 @@ func (it *DocumentIterator) GetAll() ([]*DocumentSnapshot, error) {
 			return nil, err
 		}
 		docs = append(docs, doc)
+	}
+	if limitedToLast {
+		// Flip docs order before return.
+		for i, j := 0, len(docs)-1; i < j; {
+			docs[i], docs[j] = docs[j], docs[i]
+			i++
+			j--
+		}
 	}
 	return docs, nil
 }
@@ -642,7 +700,10 @@ func newQueryDocumentIterator(ctx context.Context, q *Query, tid []byte) *queryD
 	}
 }
 
-func (it *queryDocumentIterator) next() (*DocumentSnapshot, error) {
+func (it *queryDocumentIterator) next() (_ *DocumentSnapshot, err error) {
+	it.ctx = trace.StartSpan(it.ctx, "cloud.google.com/go/firestore.Query.RunQuery")
+	defer func() { trace.EndSpan(it.ctx, err) }()
+
 	client := it.q.c
 	if it.streamClient == nil {
 		sq, err := it.q.toProto()
@@ -662,7 +723,6 @@ func (it *queryDocumentIterator) next() (*DocumentSnapshot, error) {
 		}
 	}
 	var res *pb.RunQueryResponse
-	var err error
 	for {
 		res, err = it.streamClient.Recv()
 		if err == io.EOF {
@@ -720,7 +780,8 @@ type QuerySnapshotIterator struct {
 // Next blocks until the query's results change, then returns a QuerySnapshot for
 // the current results.
 //
-// Next never returns iterator.Done unless it is called after Stop.
+// Next is not expected to return iterator.Done unless it is called after Stop.
+// Rarely, networking issues may also cause iterator.Done to be returned.
 func (it *QuerySnapshotIterator) Next() (*QuerySnapshot, error) {
 	if it.err != nil {
 		return nil, it.err
@@ -735,7 +796,7 @@ func (it *QuerySnapshotIterator) Next() (*QuerySnapshot, error) {
 	}
 	return &QuerySnapshot{
 		Documents: &DocumentIterator{
-			iter: (*btreeDocumentIterator)(btree.BeforeIndex(0)),
+			iter: (*btreeDocumentIterator)(btree.BeforeIndex(0)), q: &it.Query,
 		},
 		Size:     btree.Len(),
 		Changes:  changes,
