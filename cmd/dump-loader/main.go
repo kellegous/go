@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/api/idtoken"
 )
 
 const (
@@ -18,10 +20,12 @@ const (
 )
 
 type config struct {
-	proto    string
-	host     string
-	port     string
-	dumpFile string
+	proto        string
+	host         string
+	port         string
+	dumpFile     string
+	iapCredsFile string
+	iapAudience  string
 }
 
 type RoutesDump struct {
@@ -41,6 +45,8 @@ func main() {
 	pflag.StringVar(&c.host, "host", "localhost", "host to post data to")
 	pflag.StringVar(&c.port, "port", "8067", "port on host to talk to")
 	pflag.StringVar(&c.dumpFile, "file", "", "dump file to load from")
+	pflag.StringVar(&c.iapCredsFile, "iapcredsfile", "", "Path to GCP service account IAP credentials file")
+	pflag.StringVar(&c.iapAudience, "iapaudience", "", "Audience string for IAP interaction")
 	pflag.Parse()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
@@ -71,6 +77,26 @@ func main() {
 		log.Fatal(err)
 	}
 
+	httpClient := http.DefaultClient
+
+	if c.iapCredsFile != "" && c.iapAudience == "" {
+		log.Fatal("No IAP Audience provided with credentials file. This should be the Oauth Client ID associated with your IAP instance")
+	}
+
+	if c.iapAudience != "" && c.iapCredsFile == "" {
+		log.Fatal("No Service Account Key File provided with IAP Audience. This should be a GCP Service Account Key file for a Service Account with IAP access")
+	}
+
+	if c.iapAudience != "" && c.iapCredsFile != "" {
+		options := idtoken.WithCredentialsFile(c.iapCredsFile)
+
+		ctx := context.Background()
+		httpClient, err = idtoken.NewClient(ctx, c.iapAudience, options)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	for _, v := range d.Routes {
 		req := fmt.Sprintf(apiPath, c.proto, c.host, c.port, v.Name)
 		p, err := json.Marshal(&v)
@@ -79,7 +105,7 @@ func main() {
 			log.Println(err)
 			continue
 		}
-		resp, err := http.Post(req, "application/json", bytes.NewReader(p))
+		resp, err := httpClient.Post(req, "application/json", bytes.NewReader(p))
 		if err != nil {
 			log.Printf("error POSTing link : %s %s\n", v.Name, err.Error())
 		} else {
