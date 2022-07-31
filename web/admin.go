@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kellegous/go/backend"
+	"github.com/ctSkennerton/shortlinks/backend"
 )
 
 type adminHandler struct {

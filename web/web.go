@@ -12,8 +12,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/kellegous/go/backend"
-	"github.com/kellegous/go/internal"
+	"github.com/ctSkennerton/shortlinks/backend"
+	"github.com/ctSkennerton/shortlinks/internal"
 )
 
 // Serve a bundled asset over HTTP.
@@ -48,7 +48,7 @@ func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) 
 func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 	p := parseName("/", r.URL.Path)
 	if p == "" {
-		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/about/", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -119,6 +119,9 @@ func ListenAndServe(backend backend.Backend) error {
 		}
 
 		serveAsset(w, r, "edit.html")
+	})
+	mux.HandleFunc("/about/", func(w http.ResponseWriter, r *http.Request) {
+		serveAsset(w, r, "about.html")
 	})
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
 		getLinks(backend, w, r)

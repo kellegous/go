@@ -23,7 +23,7 @@ This tool is written in Go (ironically) and can be easily installed  and started
 with the following commands.
 
 ```
-GOPATH=`pwd` go install github.com/kellegous/go
+GOPATH=`pwd` go install github.com/ctSkennerton/shortlinks
 bin/go
 ```
 
@@ -50,3 +50,9 @@ Type `go/my-shortcut` and you'll be redirected to the URL.
 
 #### Shorten a URL
 Type `go` and enter the URL.
+
+## Developing
+
+* install go
+* install `tsc`. `npm i -g tsc`
+* install google closure compiler. `npm i -g google-closure-compiler`
