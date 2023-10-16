@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
 	"log"
@@ -14,9 +13,6 @@ import (
 	"github.com/kellegous/golinks/pkg/backend"
 	"github.com/kellegous/golinks/pkg/internal"
 )
-
-//go:embed ui
-var ui embed.FS
 
 // Serve a bundled asset over HTTP.
 func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
@@ -97,6 +93,12 @@ func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
 func ListenAndServe(backend backend.Backend) error {
+
+	ui, err := assetsIn(ui, "ui")
+	if err != nil {
+		return err
+	}
+
 	addr := viper.GetString("addr")
 	admin := viper.GetBool("admin")
 	version := viper.GetString("version")
@@ -110,20 +112,26 @@ func ListenAndServe(backend backend.Backend) error {
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
 		apiURLs(backend, host, w, r)
 	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getDefault(backend, w, r)
-	})
-	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
-		p := parseName("/edit/", r.URL.Path)
-
-		// if this is a banned name, just redirect to the local URI. That'll show em.
-		if isBannedName(p) {
-			http.Redirect(w, r, fmt.Sprintf("/%s", p), http.StatusTemporaryRedirect)
-			return
+		if ui.CanServe(r.URL.Path) {
+			ui.ServeHTTP(w, r)
+		} else {
+			getDefault(backend, w, r)
 		}
-
-		serveAsset(w, r, "edit.html")
 	})
+
+	// mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
+	// 	p := parseName("/edit/", r.URL.Path)
+
+	// 	// if this is a banned name, just redirect to the local URI. That'll show em.
+	// 	if isBannedName(p) {
+	// 		http.Redirect(w, r, fmt.Sprintf("/%s", p), http.StatusTemporaryRedirect)
+	// 		return
+	// 	}
+
+	// 	serveAsset(w, r, "edit.html")
+	// })
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
 		getLinks(backend, w, r)
 	})
