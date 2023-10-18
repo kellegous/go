@@ -14,49 +14,25 @@ import (
 	"github.com/kellegous/golinks/pkg/internal"
 )
 
-// Serve a bundled asset over HTTP.
-func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
-	// n, err := AssetInfo(name)
-	// if err != nil {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
-
-	// a, err := Asset(name)
-	// if err != nil {
-	// 	http.NotFound(w, r)
-	// 	return
-	// }
-
-	// http.ServeContent(w, r, n.Name(), n.ModTime(), bytes.NewReader(a))
-}
-
-// func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) {
-// 	a, err := fn()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	t := template.New(a.info.Name())
-// 	return t.Parse(string(a.bytes))
-// }
-
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
 func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/", r.URL.Path)
-	if p == "" {
-		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
+	path := r.URL.Path
+
+	if path == "/" {
+		http.Redirect(w, r, "/ui/", http.StatusTemporaryRedirect)
 		return
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
+	p := parseName("/", path)
+
 	rt, err := backend.Get(ctx, p)
 	if errors.Is(err, internal.ErrRouteNotFound) {
 		http.Redirect(w, r,
-			fmt.Sprintf("/edit/%s", cleanName(p)),
+			fmt.Sprintf("/ui/edit/%s", cleanName(p)),
 			http.StatusTemporaryRedirect)
 		return
 	} else if err != nil {
@@ -92,11 +68,12 @@ func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
-func ListenAndServe(backend backend.Backend) error {
-
-	ui, err := assetsIn(ui, "ui")
-	if err != nil {
-		return err
+func ListenAndServe(be backend.Backend, opts ...Option) error {
+	var options Options
+	for _, opt := range opts {
+		if err := opt(&options); err != nil {
+			return err
+		}
 	}
 
 	addr := viper.GetString("addr")
@@ -106,37 +83,33 @@ func ListenAndServe(backend backend.Backend) error {
 
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		getDefault(be, w, r)
+	})
+
+	ah, err := assetsHandler(&options)
+	if err != nil {
+		return err
+	}
+	mux.Handle("/ui/", ah)
+
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
-		apiURL(backend, host, w, r)
+		apiURL(be, host, w, r)
 	})
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
-		apiURLs(backend, host, w, r)
+		apiURLs(be, host, w, r)
 	})
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if ui.CanServe(r.URL.Path) {
-			ui.ServeHTTP(w, r)
-		} else {
-			getDefault(backend, w, r)
-		}
+	// added to skip a redirect from /edit -> /edit/
+	mux.HandleFunc("/edit", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/ui/edit/", http.StatusTemporaryRedirect)
+	})
+	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/ui/edit/", http.StatusTemporaryRedirect)
 	})
 
-	// mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
-	// 	p := parseName("/edit/", r.URL.Path)
-
-	// 	// if this is a banned name, just redirect to the local URI. That'll show em.
-	// 	if isBannedName(p) {
-	// 		http.Redirect(w, r, fmt.Sprintf("/%s", p), http.StatusTemporaryRedirect)
-	// 		return
-	// 	}
-
-	// 	serveAsset(w, r, "edit.html")
-	// })
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
-		getLinks(backend, w, r)
-	})
-	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
-		serveAsset(w, r, r.URL.Path[len("/s/"):])
+		getLinks(be, w, r)
 	})
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
@@ -147,7 +120,7 @@ func ListenAndServe(backend backend.Backend) error {
 
 	// TODO(knorton): Remove the admin handler.
 	if admin {
-		mux.Handle("/admin/", &adminHandler{backend})
+		mux.Handle("/admin/", &adminHandler{be})
 	}
 
 	return http.ListenAndServe(addr, mux)

@@ -4,6 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
 	root: 'ui',
 	publicDir: 'pub',
+	base: '/ui/',
 	build: {
 		outDir: resolve(__dirname, 'pkg/web/ui'),
 		assertsDir: '.',
