@@ -26,7 +26,10 @@ func cmdServe() *cobra.Command {
 			}
 			defer be.Close()
 
-			return web.ListenAndServe(be)
+			return web.ListenAndServe(
+				be,
+				web.WithAddr(flags.Addr()),
+				web.WithHost(flags.Host()))
 		},
 	}
 

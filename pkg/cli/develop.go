@@ -23,7 +23,6 @@ func startViteServer(
 		"npx",
 		"vite",
 		"--clearScreen=false",
-		"--debug",
 		"--port",
 		strconv.Itoa(port))
 	cmd.Dir = root
@@ -36,9 +35,10 @@ func cmdDevelop() *cobra.Command {
 	var flags developFlags
 
 	cmd := &cobra.Command{
-		Use:   "develop",
-		Short: "run the go-links development server",
-		Args:  cobra.NoArgs,
+		Use:          "develop",
+		Short:        "run the go-links development server",
+		Args:         cobra.NoArgs,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.BindPFlags(cmd.Flags()); err != nil {
 				return err
@@ -64,6 +64,8 @@ func cmdDevelop() *cobra.Command {
 			go func() {
 				ch <- web.ListenAndServe(
 					be,
+					web.WithAddr(flags.Addr()),
+					web.WithHost(flags.Host()),
 					web.WithAssetProxyAt(fmt.Sprintf("http://localhost:%d/", vitePort)))
 			}()
 

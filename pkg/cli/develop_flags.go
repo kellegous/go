@@ -7,6 +7,7 @@ import (
 
 type developFlags struct {
 	withBackend
+	withHTTP
 }
 
 func (f *developFlags) Root() string {
@@ -19,6 +20,7 @@ func (f *developFlags) VitePort() int {
 
 func (f *developFlags) Register(fs *pflag.FlagSet) {
 	f.withBackend.Register(fs)
+	f.withHTTP.Register(fs)
 
 	fs.String(
 		"root",

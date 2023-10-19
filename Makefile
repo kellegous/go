@@ -13,6 +13,8 @@ node_modules/build:
 	npm install --verbose
 	touch $@
 
+test:
+	go test ./pkg/...
 # CPP = /usr/bin/cpp -P -undef -Wundef -std=c99 -nostdinc -Wtrigraphs -fdollars-in-identifiers -C -Wno-invalid-pp-token
 
 # SRC = $(shell find web/assets -maxdepth 1 -type f)

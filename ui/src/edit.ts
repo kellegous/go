@@ -1,6 +1,7 @@
 import './edit.scss';
 
 import { html, El } from './lib/dom';
+import { EditView } from './lib/edit_view';
 
 function nameFrom(uri: string): string {
 	const parts = uri.substring(1).split('/');
@@ -14,13 +15,17 @@ class App {
 		clearEl: El,
 		urlEl: El<HTMLInputElement>,
 	) {
-		console.log(formEl, copyEl, clearEl, urlEl);
+		formEl.on('submit', (e) => this.formDidSubmit(e));
+	}
+
+	private formDidSubmit(e: Event): void {
+		e.preventDefault();
+		console.log(e);
 	}
 
 	static async load(): Promise<App> {
 		const name = nameFrom(location.pathname);
 
-		console.log(`name = "${name}"`);
 		if (name !== '') {
 			const data = await fetch(`/api/url/${name}`);
 			console.log(data);
@@ -35,4 +40,6 @@ class App {
 	}
 }
 
-App.load();
+EditView.createIn(
+	document.querySelector('#app')!
+);

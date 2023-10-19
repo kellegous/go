@@ -1,0 +1,32 @@
+.edit-view {
+	font-family: 'Raleway', sans-serif;
+	width: 600px;
+	color: #999;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+	padding: 20px;
+
+	>.input {
+		margin: 10px 0;
+		display: flex;
+		font-size: 18px;
+		padding: 10px;
+		line-height: 42px;
+
+		>.label {
+			width: 120px;
+		}
+
+		>.value {
+			flex: 1;
+			outline: none;
+			border: none;
+			font-weight: bold;
+			// background-color: #f6f6f6;
+			padding: 0 10px;
+			color: #999;
+			border-bottom: 1px solid #666;
+		}
+	}
+}

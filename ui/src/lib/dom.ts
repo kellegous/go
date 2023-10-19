@@ -27,6 +27,11 @@ export class El<T extends NativeEl = HTMLElement> {
 		return this;
 	}
 
+	withID(id: string): this {
+		this.el.id = id;
+		return this;
+	}
+
 	withClass(c: string): this {
 		this.el.classList.add(c);
 		return this;
