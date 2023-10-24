@@ -47,10 +47,11 @@ class Input {
 
 export class EditView {
 	private constructor(
-		private form: HTMLFormElement,
-		private name: Input,
-		private url: Input,
+		form: HTMLFormElement,
+		name: Input,
+		url: Input,
 	) {
+		console.log(form, name, url);
 	}
 
 	static createIn(el: HTMLElement): EditView {
