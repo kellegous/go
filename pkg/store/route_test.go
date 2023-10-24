@@ -109,9 +109,10 @@ func TestPrefix(t *testing.T) {
 		Route    Route
 		Expected string
 	}{
-		{Route{Pattern: regexp.MustCompile(`^a/b/c$`)}, "a/b/c"},
-		{Route{Pattern: regexp.MustCompile(`^a/(\d+)$`)}, "a/"},
+		{Route{Pattern: regexp.MustCompile(`^a/b/c$`)}, "a"},
+		{Route{Pattern: regexp.MustCompile(`^a/(\d+)$`)}, "a"},
 		{Route{Pattern: regexp.MustCompile(`^\d$`)}, ""},
+		{Route{Pattern: regexp.MustCompile(`^a\?b=(\d+)$`)}, "a"},
 	}
 
 	for _, test := range tests {

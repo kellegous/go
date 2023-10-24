@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -25,5 +26,9 @@ func (r *Route) Expand(uri string) (string, bool) {
 
 func (r *Route) Prefix() string {
 	p, _ := r.Pattern.LiteralPrefix()
-	return p
+	ix := strings.IndexAny(p, "/?")
+	if ix == -1 {
+		return p
+	}
+	return p[:ix]
 }
