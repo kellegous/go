@@ -6,13 +6,16 @@ import (
 	"regexp"
 )
 
-var ErrorRouteNotfound = errors.New("route not found")
+var (
+	ErrRouteNotfound = errors.New("route not found")
+	ErrIteratorDone  = errors.New("iterator done")
+)
 
 type Store interface {
 	Close() error
-	GetForURI(ctx context.Context, uri string) ([]*Route, error)
+	GetForPrefix(ctx context.Context, prefix string) (Iterator[*Route], error)
 	Get(ctx context.Context, pattern *regexp.Regexp) (*Route, error)
 	Put(ctx context.Context, r *Route) error
-	List(ctx context.Context, start string) (RouteIterator, error)
-	Search(ctx context.Context, terms []string) ([]*Route, error)
+	List(ctx context.Context, opts *ListOptions) (Iterator[Cursor[*Route]], error)
+	// Search(ctx context.Context, terms []string) (Iterator[*Route], error)
 }

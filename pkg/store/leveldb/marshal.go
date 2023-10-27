@@ -1,6 +1,7 @@
 package leveldb
 
 import (
+	"encoding/base64"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -10,10 +11,24 @@ import (
 	"github.com/kellegous/golinks/pkg/store"
 )
 
-const version = 0
+const (
+	version     byte = 0
+	routePrefix byte = 'r'
+)
 
 func keyFromPattern(p *regexp.Regexp) []byte {
-	return []byte(p.String())
+	s := p.String()
+	b := make([]byte, len(s)+1)
+	b[0] = routePrefix
+	copy(b[1:], s)
+	return b
+}
+
+func keyFromString(s string) []byte {
+	b := make([]byte, len(s)+1)
+	b[0] = routePrefix
+	copy(b[1:], s)
+	return b
 }
 
 func valFromRoute(r *store.Route) []byte {
@@ -40,7 +55,7 @@ func routeFromKeyAndVal(
 	key []byte,
 	val []byte,
 ) (*store.Route, error) {
-	if len(val) < 9 {
+	if len(val) < 10 {
 		return nil, errors.New("invalid value: too short")
 	}
 
@@ -48,7 +63,11 @@ func routeFromKeyAndVal(
 		return nil, errors.New("invalid value: invalid version")
 	}
 
-	pattern, err := regexp.Compile(string(key))
+	if key[0] != routePrefix {
+		return nil, errors.New("invalid key: invalid prefix")
+	}
+
+	pattern, err := regexp.Compile(string(key[1:]))
 	if err != nil {
 		return nil, fmt.Errorf("invalid key: %w", err)
 	}
@@ -63,4 +82,13 @@ func routeFromKeyAndVal(
 		URL:     string(val[9:]),
 		Time:    t,
 	}, nil
+}
+
+func encodeCursor(p *regexp.Regexp) string {
+	return base64.URLEncoding.EncodeToString(
+		append(keyFromPattern(p), 0xff))
+}
+
+func decodeCursor(s string) ([]byte, error) {
+	return base64.URLEncoding.DecodeString(s)
 }
