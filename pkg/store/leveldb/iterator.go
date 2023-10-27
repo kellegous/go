@@ -3,8 +3,9 @@ package leveldb
 import (
 	"context"
 
-	"github.com/kellegous/golinks/pkg/store"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
+
+	"github.com/kellegous/golinks/pkg/store"
 )
 
 type Iterator[T any] struct {

@@ -6,7 +6,7 @@ import (
 )
 
 type developFlags struct {
-	withBackend
+	withStore
 	withHTTP
 }
 
@@ -19,7 +19,7 @@ func (f *developFlags) VitePort() int {
 }
 
 func (f *developFlags) Register(fs *pflag.FlagSet) {
-	f.withBackend.Register(fs)
+	f.withStore.Register(fs)
 	f.withHTTP.Register(fs)
 
 	fs.String(

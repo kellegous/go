@@ -10,13 +10,13 @@ import (
 //go:embed ui
 var ui embed.FS
 
-func assetsHandler(opts *Options) (http.Handler, error) {
+func assetsHandler(s *Server) (http.Handler, error) {
 	f, err := fs.Sub(ui, "ui")
 	if err != nil {
 		return nil, err
 	}
 
-	if url := opts.assetProxyBaseURL; url != nil {
+	if url := s.assetProxyBaseURL; url != nil {
 		return httputil.NewSingleHostReverseProxy(url), nil
 	}
 

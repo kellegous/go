@@ -4,11 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kellegous/golinks/pkg/backend"
-	"github.com/kellegous/golinks/pkg/backend/firestore"
-	"github.com/kellegous/golinks/pkg/backend/leveldb"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"github.com/kellegous/golinks/pkg/store"
+	"github.com/kellegous/golinks/pkg/store/firestore"
+	"github.com/kellegous/golinks/pkg/store/leveldb"
 )
 
 const (
@@ -43,23 +44,23 @@ func (f *leveldbFlags) Data() string {
 	return viper.GetString("leveldb.data")
 }
 
-type withBackend struct {
+type withStore struct {
 	Firestore firestoreFlags
 	LevelDB   leveldbFlags
 }
 
-func (f *withBackend) Backend(ctx context.Context) (backend.Backend, error) {
+func (f *withStore) Store(ctx context.Context) (store.Store, error) {
 	switch b := viper.GetString("backend"); b {
 	case "leveldb":
-		return leveldb.New(f.LevelDB.Data())
+		return leveldb.Open(f.LevelDB.Data())
 	case "firestore":
 		return firestore.New(ctx, f.Firestore.Project())
 	default:
-		return nil, fmt.Errorf("unknown backend %s", b)
+		return nil, fmt.Errorf("unknown store type %s", b)
 	}
 }
 
-func (f *withBackend) Register(fs *pflag.FlagSet) {
+func (f *withStore) Register(fs *pflag.FlagSet) {
 	f.Firestore.Register(fs)
 	f.LevelDB.Register(fs)
 	// TODO(knorton): create supported string dynamically.
@@ -68,6 +69,32 @@ func (f *withBackend) Register(fs *pflag.FlagSet) {
 		defaultBackend,
 		"backing store to use. 'leveldb' and 'firestore' currently supported.")
 }
+
+// type withBackend struct {
+// 	Firestore firestoreFlags
+// 	LevelDB   leveldbFlags
+// }
+
+// func (f *withBackend) Backend(ctx context.Context) (backend.Backend, error) {
+// 	switch b := viper.GetString("backend"); b {
+// 	case "leveldb":
+// 		return leveldb.New(f.LevelDB.Data())
+// 	case "firestore":
+// 		return firestore.New(ctx, f.Firestore.Project())
+// 	default:
+// 		return nil, fmt.Errorf("unknown backend %s", b)
+// 	}
+// }
+
+// func (f *withBackend) Register(fs *pflag.FlagSet) {
+// 	f.Firestore.Register(fs)
+// 	f.LevelDB.Register(fs)
+// 	// TODO(knorton): create supported string dynamically.
+// 	fs.String(
+// 		"backend",
+// 		defaultBackend,
+// 		"backing store to use. 'leveldb' and 'firestore' currently supported.")
+// }
 
 type withHTTP struct{}
 

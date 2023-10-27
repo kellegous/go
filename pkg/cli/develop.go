@@ -54,19 +54,24 @@ func cmdDevelop() *cobra.Command {
 				return err
 			}
 
-			be, err := flags.Backend(ctx)
+			s, err := flags.Store(ctx)
 			if err != nil {
 				return err
 			}
-			defer be.Close()
+			defer s.Close()
+
+			svr, err := web.NewServer(
+				s,
+				web.WithAddr(flags.Addr()),
+				web.WithHost(flags.Host()),
+				web.WithAssetProxyAt(fmt.Sprintf("http://localhost:%d/", vitePort)))
+			if err != nil {
+				return err
+			}
 
 			ch := make(chan error)
 			go func() {
-				ch <- web.ListenAndServe(
-					be,
-					web.WithAddr(flags.Addr()),
-					web.WithHost(flags.Host()),
-					web.WithAssetProxyAt(fmt.Sprintf("http://localhost:%d/", vitePort)))
+				ch <- svr.ListenAndServe(ctx)
 			}()
 
 			// start the web

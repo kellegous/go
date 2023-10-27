@@ -3,11 +3,11 @@ package cli
 import "github.com/spf13/pflag"
 
 type serveFlags struct {
-	withBackend
+	withStore
 	withHTTP
 }
 
 func (f *serveFlags) Register(fs *pflag.FlagSet) {
-	f.withBackend.Register(fs)
+	f.withStore.Register(fs)
 	f.withHTTP.Register(fs)
 }

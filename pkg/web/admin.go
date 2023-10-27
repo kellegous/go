@@ -1,43 +1,42 @@
 package web
 
 import (
-	"context"
 	"net/http"
-	"time"
 
-	"github.com/kellegous/golinks/pkg/backend"
+	"github.com/kellegous/golinks/pkg/store"
 )
 
 type adminHandler struct {
-	backend backend.Backend
+	store store.Store
 }
 
-func adminGet(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	p := parseName("/admin/", r.URL.Path)
+func adminGet(s store.Store, w http.ResponseWriter, r *http.Request) {
+	// TODO(knorton): Fix this.
+	// p := parseName("/admin/", r.URL.Path)
 
-	if p == "" {
-		writeJSONOk(w)
-		return
-	}
+	// if p == "" {
+	// 	writeJSONOk(w)
+	// 	return
+	// }
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	// defer cancel()
 
-	if p == "dumps" {
-		if golinks, err := backend.GetAll(ctx); err != nil {
-			writeJSONBackendError(w, err)
-			return
-		} else {
-			writeJSON(w, golinks, http.StatusOK)
-		}
-	}
+	// if p == "dumps" {
+	// 	if golinks, err := store.GetAll(ctx); err != nil {
+	// 		writeJSONBackendError(w, err)
+	// 		return
+	// 	} else {
+	// 		writeJSON(w, golinks, http.StatusOK)
+	// 	}
+	// }
 
 }
 
 func (h *adminHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		adminGet(h.backend, w, r)
+		adminGet(h.store, w, r)
 	default:
 		writeJSONError(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusOK) // fix
 	}

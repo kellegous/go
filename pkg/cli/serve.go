@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/kellegous/golinks/pkg/web"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,16 +21,22 @@ func cmdServe() *cobra.Command {
 				return err
 			}
 
-			be, err := flags.Backend(context.Background())
+			ctx := context.Background()
+			s, err := flags.Store(ctx)
 			if err != nil {
 				return err
 			}
-			defer be.Close()
+			defer s.Close()
 
-			return web.ListenAndServe(
-				be,
+			svr, err := web.NewServer(
+				s,
 				web.WithAddr(flags.Addr()),
 				web.WithHost(flags.Host()))
+			if err != nil {
+				return err
+			}
+
+			return svr.ListenAndServe(ctx)
 		},
 	}
 
