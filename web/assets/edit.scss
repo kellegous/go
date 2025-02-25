@@ -28,11 +28,11 @@ form {
 }
 
 #url::-webkit-input-placeholder {
-   color: #ddd;
+  color: #ddd;
 }
 
 #url::-moz-placeholder {
-   color: #ddd;
+  color: #ddd;
 }
 
 #cmp {
@@ -58,17 +58,17 @@ form {
   color: #999;
 }
 
-#cmp > a {
+#cmp>a {
   color: #09f;
   text-decoration: none;
 }
 
-#cmp > .hnt {
+#cmp>.hnt {
   color: #ddd;
   text-shadow: 1px 1px 0 #fff;
 }
 
-#cmp > .hnt {
+#cmp>.hnt {
   float: right;
 }
 
@@ -87,6 +87,7 @@ form {
   opacity: 0;
   pointer-events: none;
 }
+
 #cls.vis {
   opacity: 0.3;
   pointer-events: inherit;
