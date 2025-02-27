@@ -1,32 +1,57 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import css from './UrlInput.module.scss';
+import { useRoute } from '../RouteContext';
+import { CenterForm } from '../CenterForm';
+import { Drawer, DrawerStyle } from '../Drawer';
+import { Link } from '../Link';
 
-export interface UrlInputProps {
-}
+export const UrlInput = () => {
+	const { info, updateRoute, deleteRoute } = useRoute();
+	const { route, error } = info;
 
-export const UrlInput = ({ }: UrlInputProps) => {
-	const [url, setUrl] = useState('');
+	const [url, setUrl] = useState(route.url);
+
+	useEffect(() => {
+		setUrl(route.url);
+	}, [setUrl, route]);
 
 	const urlDidChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setUrl(event.target.value);
 	};
+
+	const formDidSubmit = () => {
+		updateRoute(route.name, url);
+	};
+
+	const clearButtonDidClick = () => {
+		console.log('clearButtonDidClick');
+		deleteRoute(route.name);
+	};
+
+	const routeHasUrl = route.url !== '';
+	const hasError = error !== '';
 
 	const clearButtonClass = url.length > 0
 		? `${css['clear-button']} ${css.visible}`
 		: css['clear-button'];
 
 	return (
-		<>
+		<CenterForm onSubmit={formDidSubmit}>
 			<div className={css.bar}>
-				<div className={clearButtonClass}></div>
+				<div className={clearButtonClass} onClick={clearButtonDidClick}></div>
 				<input id="url"
 					className={css.url}
 					type="text"
 					placeholder="Enter the url to shorten"
 					autoComplete="off"
+					value={url}
 					onChange={urlDidChange} />
 			</div>
-			<div id="cmp"></div>
-		</>
+			<Drawer visible={routeHasUrl || hasError}
+				style={hasError ? DrawerStyle.Error : DrawerStyle.Normal}>
+				{hasError && <div>{error}</div>}
+				{routeHasUrl && !hasError && <Link name={route.name} />}
+			</Drawer>
+		</CenterForm>
 	);
 }

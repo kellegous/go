@@ -1,11 +1,9 @@
 package web
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"time"
@@ -15,33 +13,6 @@ import (
 	"github.com/kellegous/go/backend"
 	"github.com/kellegous/go/internal"
 )
-
-// Serve a bundled asset over HTTP.
-func serveAsset(w http.ResponseWriter, r *http.Request, name string) {
-	n, err := AssetInfo(name)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	a, err := Asset(name)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	http.ServeContent(w, r, n.Name(), n.ModTime(), bytes.NewReader(a))
-}
-
-func templateFromAssetFn(fn func() (*asset, error)) (*template.Template, error) {
-	a, err := fn()
-	if err != nil {
-		return nil, err
-	}
-
-	t := template.New(a.info.Name())
-	return t.Parse(string(a.bytes))
-}
 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
@@ -71,28 +42,12 @@ func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request)
 
 }
 
-func getLinks(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
-	t, err := templateFromAssetFn(linksHtml)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	rts, err := backend.GetAll(ctx)
-	if err != nil {
-		log.Panic(err)
-	}
-
-	if err := t.Execute(w, rts); err != nil {
-		log.Panic(err)
-	}
-}
-
 // ListenAndServe sets up all web routes, binds the port and handles incoming
 // web requests.
-func ListenAndServe(backend backend.Backend) error {
+func ListenAndServe(
+	backend backend.Backend,
+	assets http.Handler,
+) error {
 	addr := viper.GetString("addr")
 	admin := viper.GetBool("admin")
 	version := viper.GetString("version")
@@ -118,14 +73,15 @@ func ListenAndServe(backend backend.Backend) error {
 			return
 		}
 
-		serveAsset(w, r, "edit.html")
+		r.URL.Path = "/s/edit/"
+		assets.ServeHTTP(w, r)
 	})
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
-		getLinks(backend, w, r)
+		r.URL.Path = "/s/links/"
+		assets.ServeHTTP(w, r)
 	})
-	mux.HandleFunc("/s/", func(w http.ResponseWriter, r *http.Request) {
-		serveAsset(w, r, r.URL.Path[len("/s/"):])
-	})
+
+	mux.Handle("/s/", assets)
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
 	})

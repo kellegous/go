@@ -3,9 +3,10 @@ import css from './CenterForm.module.scss';
 
 export interface CenterFormProps {
 	children: React.ReactNode;
+	onSubmit?: () => void;
 }
 
-export const CenterForm = ({ children }: CenterFormProps) => {
+export const CenterForm = ({ children, onSubmit }: CenterFormProps) => {
 	const ref = createRef<HTMLFormElement>();
 
 	useEffect(() => {
@@ -25,8 +26,15 @@ export const CenterForm = ({ children }: CenterFormProps) => {
 		return () => window.removeEventListener('resize', didResize);
 	}, [ref]);
 
+	const formDidSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		if (onSubmit) {
+			onSubmit();
+		}
+	}
+
 	return (
-		<form className={css.form} ref={ref}>
+		<form className={css.form} ref={ref} onSubmit={formDidSubmit}>
 			{children}
 		</form>
 	);

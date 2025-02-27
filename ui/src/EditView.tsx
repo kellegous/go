@@ -1,10 +1,10 @@
-import { CenterForm } from "./CenterForm"
+import { RouteProvider } from "./RouteContext"
 import { UrlInput } from "./UrlInput"
 
 export const EditView = () => {
 	return (
-		<CenterForm>
+		<RouteProvider>
 			<UrlInput />
-		</CenterForm>
+		</RouteProvider>
 	);
 };

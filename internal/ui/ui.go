@@ -14,5 +14,5 @@ func Assets() (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
-	return http.FileServer(http.FS(s)), nil
+	return http.StripPrefix("/s/", http.FileServer(http.FS(s))), nil
 }
