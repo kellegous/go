@@ -9,57 +9,45 @@ function nameFrom(uri: string): string {
 }
 
 function errorToString(e: unknown): string {
-	if (typeof e === 'string') {
-		return e;
-	} else if (e instanceof Error) {
+	if (e instanceof api.ApiError) {
 		return e.message;
 	}
-	return 'An unknown error occurred';
+	return 'Oops! Something went sideways!';
 }
 
 export const RouteProvider = ({ children }: { children: ReactNode }) => {
 	const [result, setResult] = useState<Result<api.Route>>(
-		{ value: { name: '', url: '' }, error: '' },
+		Result.of({ name: '', url: '' })
 	);
 
 	const name = nameFrom(location.pathname);
 
 	useEffect(() => {
 		if (name === '') {
-			setResult({ value: { name: '', url: '' }, error: '' });
+			setResult(Result.of({ name: '', url: '' }));
 			return;
 		}
 
-		api.getRoute(name)
-			.then(route => setResult({ value: route, error: '' }))
-			.catch(error => setResult({ value: { name, url: '' }, error: errorToString(error) }));
+		Result.from(
+			() => api.getRoute(name),
+			{ name: name, url: '' },
+			errorToString
+		).then(setResult);
 	}, [setResult, name]);
 
-	const updateRoute = async (name: string, url: string) => {
-		try {
-			setResult({
-				value: await api.postRoute(name, url),
-				error: '',
-			});
-		} catch (e) {
-			setResult({
-				value: { name, url },
-				error: errorToString(e),
-			});
-		}
-	};
+	const updateRoute = async (name: string, url: string) =>
+		setResult(await Result.from(
+			() => api.postRoute(name, url),
+			{ name, url },
+			errorToString
+		));
 
-	const deleteRoute = async (name: string) => {
-		try {
-			await api.deleteRoute(name);
-			setResult({ value: { name, url: '' }, error: '' });
-		} catch (e) {
-			setResult({
-				value: { name, url: '' },
-				error: errorToString(e),
-			});
-		}
-	};
+	const deleteRoute = async (name: string) =>
+		setResult(await Result.from(
+			() => api.deleteRoute(name),
+			{ name, url: '' },
+			errorToString
+		));
 
 	return (
 		<RouteContext.Provider value={{ result, updateRoute, deleteRoute }} >
