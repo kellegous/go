@@ -12,11 +12,11 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/kellegous/go/backend"
-	"github.com/kellegous/go/backend/firestore"
-	"github.com/kellegous/go/backend/leveldb"
+	"github.com/kellegous/go/internal/backend"
+	"github.com/kellegous/go/internal/backend/firestore"
+	"github.com/kellegous/go/internal/backend/leveldb"
 	"github.com/kellegous/go/internal/ui"
-	"github.com/kellegous/go/web"
+	"github.com/kellegous/go/internal/web"
 )
 
 func getAssets(proxyURL *url.URL) (http.Handler, error) {

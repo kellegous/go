@@ -6,8 +6,8 @@ import { Drawer, DrawerStyle } from '../Drawer';
 import { Link } from '../Link';
 
 export const UrlInput = () => {
-	const { info, updateRoute, deleteRoute } = useRoute();
-	const { route, error } = info;
+	const { result, updateRoute, deleteRoute } = useRoute();
+	const { value: route, error } = result;
 
 	const [url, setUrl] = useState(route.url);
 
@@ -49,7 +49,7 @@ export const UrlInput = () => {
 			</div>
 			<Drawer visible={routeHasUrl || hasError}
 				style={hasError ? DrawerStyle.Error : DrawerStyle.Normal}>
-				{hasError && <div>{error}</div>}
+				{hasError && <div>{String(error)}</div>}
 				{routeHasUrl && !hasError && <Link name={route.name} />}
 			</Drawer>
 		</CenterForm>

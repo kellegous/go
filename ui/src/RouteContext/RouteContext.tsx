@@ -1,13 +1,14 @@
 import { Route } from "../api";
 import { createContext } from "react";
+import { Result } from "../result";
 
-export interface RouteInfo {
+export interface MaybeRoute {
 	route: Route;
 	error: string;
 }
 
 export interface RouteContextState {
-	info: RouteInfo;
+	result: Result<Route>;
 	updateRoute: (name: string, url: string) => void;
 	deleteRoute: (name: string) => void;
 }

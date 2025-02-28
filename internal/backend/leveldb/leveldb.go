@@ -14,12 +14,15 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 
 	"github.com/kellegous/go/internal"
+	"github.com/kellegous/go/internal/backend"
 )
 
 const (
 	routesDbFilename = "routes.db"
 	idLogFilename    = "id"
 )
+
+var _ backend.Backend = (*Backend)(nil)
 
 // Backend provides access to the leveldb store.
 type Backend struct {

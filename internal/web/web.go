@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/kellegous/go/backend"
 	"github.com/kellegous/go/internal"
+	"github.com/kellegous/go/internal/backend"
 )
 
 // The default handler responds to most requests. It is responsible for the

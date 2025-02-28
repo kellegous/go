@@ -1,55 +1,68 @@
 import { ReactNode, useEffect, useState } from "react";
 import * as api from "../api";
-import { RouteContext, RouteInfo } from "./RouteContext";
+import { RouteContext } from "./RouteContext";
+import { Result } from "../result";
 
 function nameFrom(uri: string): string {
 	const parts = uri.substring(1).split('/');
 	return parts[1] ?? '';
 }
 
+function errorToString(e: unknown): string {
+	if (typeof e === 'string') {
+		return e;
+	} else if (e instanceof Error) {
+		return e.message;
+	}
+	return 'An unknown error occurred';
+}
+
 export const RouteProvider = ({ children }: { children: ReactNode }) => {
-	const [info, setRoute] = useState<RouteInfo>({
-		route: { name: '', url: '' },
-		error: '',
-	});
+	const [result, setResult] = useState<Result<api.Route>>(
+		{ value: { name: '', url: '' }, error: '' },
+	);
 
 	const name = nameFrom(location.pathname);
 
 	useEffect(() => {
 		if (name === '') {
-			setRoute({
-				route: { name: '', url: '' },
-				error: ''
-			});
+			setResult({ value: { name: '', url: '' }, error: '' });
 			return;
 		}
 
 		api.getRoute(name)
-			.then(route => setRoute({ route, error: '' }))
-			.catch((error) => console.error(error));
-	}, [setRoute, name]);
+			.then(route => setResult({ value: route, error: '' }))
+			.catch(error => setResult({ value: { name, url: '' }, error: errorToString(error) }));
+	}, [setResult, name]);
 
 	const updateRoute = async (name: string, url: string) => {
 		try {
-			setRoute({ route: await api.postRoute(name, url), error: '' });
+			setResult({
+				value: await api.postRoute(name, url),
+				error: '',
+			});
 		} catch (e) {
-			const message = (e instanceof Error) ? e.message : 'Failed to update route';
-			setRoute({ route: { name, url }, error: message });
+			setResult({
+				value: { name, url },
+				error: errorToString(e),
+			});
 		}
 	};
 
 	const deleteRoute = async (name: string) => {
 		try {
 			await api.deleteRoute(name);
-			setRoute({ route: { name, url: '' }, error: '' });
+			setResult({ value: { name, url: '' }, error: '' });
 		} catch (e) {
-			const message = (e instanceof Error) ? e.message : 'Failed to update route';
-			setRoute({ route: { name, url: '' }, error: message });
+			setResult({
+				value: { name, url: '' },
+				error: errorToString(e),
+			});
 		}
 	};
 
 	return (
-		<RouteContext.Provider value={{ info, updateRoute, deleteRoute }} >
+		<RouteContext.Provider value={{ result, updateRoute, deleteRoute }} >
 			{children}
 		</RouteContext.Provider >
 	);
