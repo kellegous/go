@@ -1,9 +1,10 @@
+import { useRoutes } from './RoutesContext';
+
 export const LinksView = () => {
+	const { value, error } = useRoutes();
+	console.log(value, error);
+
 	return (
-		<>
-			<h1>Links</h1>
-			<div>
-			</div>
-		</>
+		<div>{value.length}</div>
 	);
 };

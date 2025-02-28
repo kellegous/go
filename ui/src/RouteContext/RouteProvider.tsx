@@ -1,22 +1,17 @@
 import { ReactNode, useEffect, useState } from "react";
-import * as api from "../api";
 import { RouteContext } from "./RouteContext";
 import { Result } from "../result";
+import * as api from '../api';
+import { apiErrorToString, Route } from "../api";
 
 function nameFrom(uri: string): string {
 	const parts = uri.substring(1).split('/');
 	return parts[1] ?? '';
 }
 
-function errorToString(e: unknown): string {
-	if (e instanceof api.ApiError) {
-		return e.message;
-	}
-	return 'Oops! Something went sideways!';
-}
 
 export const RouteProvider = ({ children }: { children: ReactNode }) => {
-	const [result, setResult] = useState<Result<api.Route>>(
+	const [result, setResult] = useState<Result<Route>>(
 		Result.of({ name: '', url: '' })
 	);
 
@@ -31,7 +26,7 @@ export const RouteProvider = ({ children }: { children: ReactNode }) => {
 		Result.from(
 			() => api.getRoute(name),
 			{ name: name, url: '' },
-			errorToString
+			apiErrorToString,
 		).then(setResult);
 	}, [setResult, name]);
 
@@ -39,14 +34,14 @@ export const RouteProvider = ({ children }: { children: ReactNode }) => {
 		setResult(await Result.from(
 			() => api.postRoute(name, url),
 			{ name, url },
-			errorToString
+			apiErrorToString,
 		));
 
 	const deleteRoute = async (name: string) =>
 		setResult(await Result.from(
 			() => api.deleteRoute(name),
 			{ name, url: '' },
-			errorToString
+			apiErrorToString,
 		));
 
 	return (

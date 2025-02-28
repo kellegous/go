@@ -28,17 +28,29 @@ interface RouteResponse {
 	route?: RawRoute;
 }
 
-async function fromResponse(res: Response): Promise<Route | null> {
+interface RoutesResponse {
+	ok: boolean;
+	error?: string;
+	routes?: RawRoute[];
+}
+
+async function fromResponse<T extends { ok: boolean, error?: string }, V>(
+	res: Response,
+	getValue: (json: T) => V | null,
+): Promise<V | null> {
 	if (res.status == 404) {
 		return null;
 	}
 
-	const { ok, error, route } = await res.json() as RouteResponse;
-	if (!ok || !route) {
+	const data = await res.json() as T;
+	const { ok, error } = data;
+	const value = getValue(data);
+
+	if (!ok || !value) {
 		throw new ApiError(error ?? 'Oof. Something went sideways.');
 	}
 
-	return toRoute(route);
+	return value;
 }
 
 export class ApiError extends Error {
@@ -49,27 +61,48 @@ export class ApiError extends Error {
 }
 
 export async function getRoute(name: string): Promise<Route> {
-	const route = await fromResponse(await fetch(`/api/url/${name}`));
-	return route ?? { name, url: "" };
+	const route = await fromResponse(
+		await fetch(`/api/url/${name}`),
+		(data: RouteResponse) => data.route ? toRoute(data.route) : null,
+	);
+	return route ?? { name, url: '' };
+}
+
+export async function getRoutes(): Promise<Route[]> {
+	const routes = await fromResponse(
+		await fetch('/api/urls'),
+		(data: RoutesResponse) => data.routes?.map(toRoute) ?? [],
+	);
+	return routes ?? [];
 }
 
 export async function postRoute(name: string, url: string): Promise<Route> {
-	const route = await fromResponse(await fetch(`/api/url/${name}`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({ url }),
-	}));
+	const route = await fromResponse(
+		await fetch(`/api/url/${name}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({ url }),
+		}),
+		(data: RouteResponse) => data.route ? toRoute(data.route) : null,
+	);
 	return route ?? { name, url };
 }
 
 export async function deleteRoute(name: string): Promise<Route> {
-	const res = await fetch(`/api/url/${name}`, {
-		method: 'DELETE',
-	});
-	if (!res.ok) {
-		throw new ApiError('Failed to delete route');
+	const route = await fromResponse(
+		await fetch(`/api/url/${name}`, {
+			method: 'DELETE',
+		}),
+		(data: RouteResponse) => data.route ? toRoute(data.route) : null,
+	);
+	return route ?? { name, url: '' };
+}
+
+export function apiErrorToString(e: unknown): string {
+	if (e instanceof ApiError) {
+		return e.message;
 	}
-	return { name, url: '' };
+	return 'Oops! Something went sideways!';
 }
