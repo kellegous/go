@@ -35,7 +35,6 @@ func startGoServer(
 	c := exec.CommandContext(
 		ctx,
 		"bin/go",
-		"--host=http://go",
 		fmt.Sprintf("--asset-proxy-url=%s", proxyURL))
 	c.Dir = root
 	c.Stdout = os.Stdout

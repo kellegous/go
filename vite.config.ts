@@ -18,9 +18,4 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    proxy: {
-      "/api": "https://go.finch-mahi.ts.net",
-    },
-  },
 });
