@@ -12,7 +12,7 @@ export const RoutesProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchAllRoutes = async () => {
       const allRoutes = [];
-      for await (const routes of res()) {
+      for await (const routes of res) {
         allRoutes.push(...routes);
         setResult(Result.of(allRoutes));
       }
