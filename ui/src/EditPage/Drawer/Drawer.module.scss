@@ -1,22 +1,22 @@
 .drawer {
-	padding: 25px;
-	width: 560px;
-	margin: 0 auto;
-	text-align: left;
-	font-size: 21px;
-	transition: transform 200ms ease-in-out;
-	transform: scaleY(0);
-	transform-origin: top center;
-	border-bottom-left-radius: 4px;
-	border-bottom-right-radius: 4px;
-	border: 1px solid #ccc;
+  padding: 25px;
+  width: 560px;
+  margin: 0 auto;
+  text-align: left;
+  font-size: 21px;
+  transition: transform 200ms ease-in-out;
+  transform: scaleY(0);
+  transform-origin: top center;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  border: 1px solid var(--stroke-primary);
 
-	&.visible {
-		transform: scaleY(1);
-	}
+  &.visible {
+    transform: scaleY(1);
+  }
 
-	&.fuck {
-		background-color: #fee;
-		color: #999;
-	}
+  &.fuck {
+    background-color: #fee;
+    color: var(--text-muted);
+  }
 }

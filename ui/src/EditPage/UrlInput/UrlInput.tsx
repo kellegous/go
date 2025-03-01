@@ -27,7 +27,6 @@ export const UrlInput = () => {
   };
 
   const clearButtonDidClick = () => {
-    console.log("clearButtonDidClick");
     deleteRoute(route.name);
   };
 

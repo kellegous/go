@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   root: "ui",
@@ -13,14 +13,14 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        edit: './ui/edit/index.html',
-        links: './ui/links/index.html',
-      }
-    }
+        edit: "./ui/edit/index.html",
+        links: "./ui/index.html",
+      },
+    },
   },
   server: {
     proxy: {
-      '/api': 'https://go.finch-mahi.ts.net',
+      "/api": "https://go.finch-mahi.ts.net",
     },
   },
-})
+});

@@ -98,7 +98,7 @@ export async function deleteRoute(name: string): Promise<Route> {
     await fetch(`/api/url/${name}`, {
       method: "DELETE",
     }),
-    (data: RouteResponse) => (data.route ? toRoute(data.route) : null)
+    () => ({ name, url: "" })
   );
   return route ?? { name, url: "" };
 }

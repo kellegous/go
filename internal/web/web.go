@@ -16,10 +16,17 @@ import (
 
 // The default handler responds to most requests. It is responsible for the
 // shortcut redirects and for sending unmapped shortcuts to the edit page.
-func getDefault(backend backend.Backend, w http.ResponseWriter, r *http.Request) {
+func getDefault(
+	backend backend.Backend,
+	assets http.Handler,
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	p := parseName("/", r.URL.Path)
 	if p == "" {
-		http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
+		r.URL.Path = "/s/"
+		assets.ServeHTTP(w, r)
+		// http.Redirect(w, r, "/edit/", http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -58,17 +65,21 @@ func ListenAndServe(
 	mux.HandleFunc("/api/url/", func(w http.ResponseWriter, r *http.Request) {
 		apiURL(backend, host, w, r)
 	})
+
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
 		apiURLs(backend, host, w, r)
 	})
+
 	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, struct {
 			Host string `json:"host"`
 		}{host}, http.StatusOK)
 	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getDefault(backend, w, r)
+		getDefault(backend, assets, w, r)
 	})
+
 	mux.HandleFunc("/edit/", func(w http.ResponseWriter, r *http.Request) {
 		p := parseName("/edit/", r.URL.Path)
 
@@ -81,15 +92,17 @@ func ListenAndServe(
 		r.URL.Path = "/s/edit/"
 		assets.ServeHTTP(w, r)
 	})
+
 	mux.HandleFunc("/links/", func(w http.ResponseWriter, r *http.Request) {
-		r.URL.Path = "/s/links/"
-		assets.ServeHTTP(w, r)
+		http.Redirect(w, r, "/", http.StatusPermanentRedirect)
 	})
 
 	mux.Handle("/s/", assets)
+
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, version)
 	})
+
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "👍")
 	})
