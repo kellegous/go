@@ -2,7 +2,7 @@ SHA := $(shell git rev-parse HEAD)
 
 ASSETS := \
 	internal/ui/assets/edit/index.html \
-	internal/ui/assets/links/index.html
+	internal/ui/assets/index.html
 
 .PHONY: all clean develop
 
