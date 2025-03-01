@@ -1,6 +1,25 @@
+:root {
+  --background: #fff;
+
+  --text-primary: #333;
+  --text-linkable: #09f;
+  --text-muted: #999;
+  --text-super-muted: #ccc;
+  --text-muted-emphasis: #666;
+
+  --stroke-primary: #cfd3d3;
+
+  --edit-text-base-size: 42px;
+
+  --links-text-base-size: 24px;
+}
+
 body {
-  background: #fff;
-  font-family: "Raleway", sans-serif;
-  font-size: 42px;
+  background: var(--background);
+  color: var(--text-primary);
+
+  font-family: "Josefin Sans", serif;
+  font-optical-sizing: auto;
   font-weight: 300;
+  font-style: normal;
 }

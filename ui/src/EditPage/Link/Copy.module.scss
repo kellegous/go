@@ -2,18 +2,18 @@
   position: relative;
 
   > .icon {
-    color: #ccc;
+    color: var(--text-super-muted);
     text-shadow: 1px 1px 0 #fff;
     cursor: pointer;
 
     &:hover {
-      color: #666;
+      color: var(--text-muted-emphasis);
     }
   }
 
   > .feedback {
     position: absolute;
-    color: #999;
+    color: var(--text-super-muted);
     opacity: 0;
     pointer-events: none;
 

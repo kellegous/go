@@ -1,13 +1,13 @@
 @use "./global.scss";
 
 body {
-  font-size: 24px;
+  font-size: var(--links-text-base-size);
 }
 
 h1 {
   margin: 0;
-  font-size: 32px;
-  color: #999;
+  font-size: 18px;
+  margin-bottom: 16px;
 }
 
 #root {

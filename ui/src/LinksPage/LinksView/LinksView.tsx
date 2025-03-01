@@ -1,6 +1,6 @@
 import { useConfig } from "../../ConfigContext";
 import { useRoutes } from "../RoutesContext";
-import { Link } from "./Link";
+import { LinkRow } from "./Link/LinkRow";
 import css from "./LinksView.module.scss";
 
 export const LinksView = () => {
@@ -9,17 +9,13 @@ export const LinksView = () => {
 
   return (
     <div className={css.links}>
-      {value.map(({ name, url }, i) => {
+      {value.map((route) => {
         return (
-          <>
-            {i !== 0 && <hr key={name + "-div"} />}
-            <Link
-              key={name}
-              name={name}
-              url={url}
-              short_url={`${host}/${name}`}
-            />
-          </>
+          <LinkRow
+            key={route.name}
+            route={route}
+            short_url={`${host}/${route.name}`}
+          />
         );
       })}
     </div>

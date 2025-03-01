@@ -1,9 +1,10 @@
 export type Styles = {
-  link: string;
-  info: string;
-  edit: string;
-  ["short-url"]: string;
+  linkrow: string;
+  upper: string;
+  lower: string;
   url: string;
+  controls: string;
+  time: string;
 };
 
 export type ClassNames = keyof Styles;
