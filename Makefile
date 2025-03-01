@@ -39,3 +39,6 @@ publish: bin/buildimg
 	bin/buildimg --tag=$(shell git rev-parse --short $(SHA)) \
 		--target=linux/arm64 --target=linux/amd64 \
 		--build-arg=SHA=${SHA} kellegous/go
+	bin/buildimg --tag=latest \
+		--target=linux/arm64 --target=linux/amd64 \
+		--build-arg=SHA=${SHA} kellegous/go
