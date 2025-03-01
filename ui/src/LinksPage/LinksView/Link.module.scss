@@ -1,0 +1,45 @@
+.link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 16px;
+
+  > .info {
+    flex-grow: 1;
+    overflow: hidden;
+    font-size: 28px;
+    line-height: 32px;
+
+    > .short-url {
+      > a {
+        color: #09f;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+
+    > .url {
+      color: #ccc;
+      font-size: 95%;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+  }
+
+  > .edit {
+    padding-left: 16px;
+
+    a {
+      color: #ccc;
+      text-decoration: none;
+
+      &:hover {
+        color: #666;
+      }
+    }
+  }
+}

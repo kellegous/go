@@ -61,6 +61,11 @@ func ListenAndServe(
 	mux.HandleFunc("/api/urls/", func(w http.ResponseWriter, r *http.Request) {
 		apiURLs(backend, host, w, r)
 	})
+	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, struct {
+			Host string `json:"host"`
+		}{host}, http.StatusOK)
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		getDefault(backend, w, r)
 	})

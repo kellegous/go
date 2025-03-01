@@ -1,6 +1,16 @@
-@use './global.scss';
+@use "./global.scss";
+
+body {
+  font-size: 24px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 32px;
+  color: #999;
+}
 
 #root {
-	width: 800px;
-	margin: 50px auto;
+  width: 800px;
+  margin: 50px auto;
 }
