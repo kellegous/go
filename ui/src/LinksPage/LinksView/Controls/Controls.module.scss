@@ -1,0 +1,8 @@
+.controls {
+  color: var(--text-muted);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--text-muted-emphasis);
+  }
+}

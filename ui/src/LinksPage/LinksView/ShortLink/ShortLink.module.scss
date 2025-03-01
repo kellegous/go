@@ -1,0 +1,14 @@
+.shortlink {
+  background-color: rgba(91, 98, 98, 0.06);
+  padding: 4px 8px;
+  border-radius: 3px;
+
+  > a {
+    color: var(--text-linkable);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

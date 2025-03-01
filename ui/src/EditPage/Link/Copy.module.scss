@@ -1,0 +1,40 @@
+.button {
+  position: relative;
+
+  > .icon {
+    color: var(--text-super-muted);
+    text-shadow: 1px 1px 0 #fff;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--text-muted-emphasis);
+    }
+  }
+
+  > .feedback {
+    position: absolute;
+    color: var(--text-super-muted);
+    opacity: 0;
+    pointer-events: none;
+
+    &.active {
+      animation-name: go-wild;
+      animation-duration: 300ms;
+    }
+  }
+}
+
+@keyframes go-wild {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(4);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}

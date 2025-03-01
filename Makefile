@@ -1,30 +1,31 @@
-CPP = /usr/bin/cpp -P -undef -Wundef -std=c99 -nostdinc -Wtrigraphs -fdollars-in-identifiers -C -Wno-invalid-pp-token
+SHA := $(shell git rev-parse HEAD)
 
-SRC = $(shell find web/assets -maxdepth 1 -type f)
-DST = $(patsubst %.scss,%.css,$(patsubst %.ts,%.js,$(subst web/assets,.build/assets,$(SRC))))
+ASSETS := \
+	internal/ui/assets/edit/index.html \
+	internal/ui/assets/links/index.html
 
-ALL: web/bindata.go
+.PHONY: all clean develop
 
-.build/bin/go-bindata:
-	GOPATH=$(shell pwd)/.build go get github.com/a-urth/go-bindata/...
+all: bin/go
 
-.build/assets:
-	mkdir -p $@
+bin/go: cmd/go/main.go $(ASSETS) $(shell find internal -name '*.go')
+	go build -o $@ ./cmd/go
 
-.build/assets/%.css: web/assets/%.scss
-	sass --no-source-map --style=compressed $< $@
+bin/devserver: cmd/devserver/main.go $(ASSETS)
+	go build -o $@ ./cmd/devserver
 
-.build/assets/%.js: web/assets/%.ts
-	$(eval TMP := $(shell mktemp))
-	tsc --out $(TMP) $< 
-	closure-compiler --js $(TMP) --js_output_file $@
-	rm -f $(TMP)
+node_modules/.build: package.json
+	npm install
+	touch $@
 
-.build/assets/%: web/assets/%
-	cp $< $@
+internal/ui/assets/edit/index.html: node_modules/.build $(shell find ui -type f)
+	npm run build
 
-web/bindata.go: .build/bin/go-bindata .build/assets $(DST)
-	$< -o $@ -pkg web -prefix .build/assets -nomemcopy .build/assets/...
+internal/ui/assets/links/index.html: node_modules/.build $(shell find ui -type f)
+	npm run build
+
+develop: bin/devserver bin/go
+	bin/devserver
 
 clean:
-	rm -rf .build/assets web/bindata.go
+	rm -rf bin internal/ui/assets
