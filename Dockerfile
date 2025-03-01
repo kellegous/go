@@ -1,8 +1,15 @@
-FROM golang:alpine
+FROM kellegous/build:f1799259 AS build
+
+ARG SHA
 
 COPY . /src
-RUN cd /src/cmd/go && go build -mod=vendor -o /usr/bin/go
+RUN cd /src && CGO_ENABLED=0 make SHA=${SHA} clean all
+
+FROM scratch
+
+COPY --from=build /src/bin/go /
 
 EXPOSE 8067
 
-CMD ["/usr/bin/go", "--data=/data"]
+ENTRYPOINT [ "/go" ]
+CMD ["--data=/data"]
