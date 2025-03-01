@@ -1,24 +1,13 @@
 .root {
-	display: flex;
+  display: flex;
 
-	>.link {
-		flex-grow: 1;
+  > .link {
+    flex-grow: 1;
 
-		>a {
-			color: #09f;
-			text-decoration: none;
-			flex-grow: 1;
-		}
-	}
-
-	>.copy {
-		color: #ccc;
-		text-shadow: 1px 1px 0 #fff;
-		cursor: pointer;
-
-		&:hover {
-			color: #666;
-		}
-	}
-
+    > a {
+      color: #09f;
+      text-decoration: none;
+      flex-grow: 1;
+    }
+  }
 }
