@@ -30,6 +30,7 @@ interface RoutesResponse {
   ok: boolean;
   error?: string;
   routes?: RawRoute[];
+  next: string;
 }
 
 async function fromResponse<T extends { ok: boolean; error?: string }, V>(
@@ -71,12 +72,27 @@ export async function getConfig(): Promise<Config> {
   return host === "" ? { host: location.host } : { host };
 }
 
-export async function getRoutes(): Promise<Route[]> {
-  const routes = await fromResponse(
-    await fetch("/api/urls/"),
-    (data: RoutesResponse) => data.routes?.map(toRoute) ?? []
+export async function getRoutes(
+  next: string,
+  limit: number = 1000
+): Promise<[Route[], string]> {
+  const value = await fromResponse(
+    await fetch(`/api/urls/?cursor=${next}&limit=${limit}`),
+    (data: RoutesResponse) =>
+      [data.routes?.map(toRoute) ?? [], data.next] as [Route[], string]
   );
-  return routes ?? [];
+  return value ?? [[], next];
+}
+
+export async function* getAllRoutes(
+  pageSize: number = 1000
+): AsyncGenerator<Route[]> {
+  let cursor = "";
+  do {
+    const [routes, next] = await getRoutes(cursor, pageSize);
+    yield routes;
+    cursor = next;
+  } while (cursor !== "");
 }
 
 export async function postRoute(name: string, url: string): Promise<Route> {

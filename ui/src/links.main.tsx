@@ -5,7 +5,7 @@ import { LinksPage } from "./LinksPage";
 import "./links.main.scss";
 
 createRoot(document.getElementById("root")!).render(
-	<StrictMode>
-		<LinksPage />
-	</StrictMode>
+  <StrictMode>
+    <LinksPage />
+  </StrictMode>
 );
