@@ -41,7 +41,7 @@ bin/publish: cmd/publish/main.go
 publish: bin/publish
 	bin/publish \
 		--tag=latest \
-		--tag=$(shell git rev-parse --short $(SHA))
+		--tag=$(shell git rev-parse --short $(SHA)) \
 		--platform=linux/arm64 \
 		--platform=linux/amd64 \
 		--build-arg=SHA=${SHA} \
