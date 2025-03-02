@@ -69,7 +69,7 @@ export async function getRoute(name: string): Promise<Route> {
 
 export async function getConfig(): Promise<Config> {
   const { host } = await fetch("/api/config").then((res) => res.json());
-  return host === "" ? { host: location.host } : { host };
+  return host === "" ? { host: location.origin } : { host };
 }
 
 export async function getRoutes(
