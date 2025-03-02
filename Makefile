@@ -35,10 +35,14 @@ clean:
 bin/buildimg:
 	GOBIN="$(CURDIR)/bin" go install github.com/kellegous/buildimg@latest
 
-publish: bin/buildimg
-	bin/buildimg --tag=$(shell git rev-parse --short $(SHA)) \
-		--target=linux/arm64 --target=linux/amd64 \
-		--build-arg=SHA=${SHA} kellegous/go
-	bin/buildimg --tag=latest \
-		--target=linux/arm64 --target=linux/amd64 \
-		--build-arg=SHA=${SHA} kellegous/go
+bin/publish: cmd/publish/main.go
+	go build -o $@ ./cmd/publish
+
+publish: bin/publish
+	bin/publish \
+		--tag=latest \
+		--tag=$(shell git rev-parse --short $(SHA))
+		--platform=linux/arm64 \
+		--platform=linux/amd64 \
+		--build-arg=SHA=${SHA} \
+		--image=kellegous/go
