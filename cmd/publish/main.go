@@ -103,14 +103,14 @@ func run(
 	platforms []string,
 	buildArgs []string,
 ) error {
-	ctx, done := signal.NotifyContext(ctx, os.Interrupt)
-	defer done()
-
 	builder, err := StartBuilder(ctx)
 	if err != nil {
 		return err
 	}
-	defer builder.Shutdown(ctx)
+	defer builder.Shutdown(context.Background())
+
+	ctx, done := signal.NotifyContext(ctx, os.Interrupt)
+	defer done()
 
 	ch := make(chan error, 1)
 	go func() {
