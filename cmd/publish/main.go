@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -102,17 +103,26 @@ func run(
 	platforms []string,
 	buildArgs []string,
 ) error {
+	ctx, done := signal.NotifyContext(ctx, os.Interrupt)
+	defer done()
+
 	builder, err := StartBuilder(ctx)
 	if err != nil {
 		return err
 	}
 	defer builder.Shutdown(ctx)
 
-	if err := builder.Build(ctx, image, tags, platforms, buildArgs); err != nil {
+	ch := make(chan error, 1)
+	go func() {
+		ch <- builder.Build(ctx, image, tags, platforms, buildArgs)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-ch:
 		return err
 	}
-
-	return nil
 }
 
 func main() {
