@@ -1,9 +1,7 @@
 FROM kellegous/build:f1799259 AS build
 
-ARG SHA
-
 COPY . /src
-RUN cd /src && CGO_ENABLED=0 make SHA=${SHA} clean all
+RUN cd /src && CGO_ENABLED=0 make clean all
 
 FROM scratch
 

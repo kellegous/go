@@ -1,12 +1,10 @@
-ifndef SHA
-	SHA := $(shell git rev-parse HEAD)
-endif
+SHA := $(shell git rev-parse HEAD)
 
 ASSETS := \
 	internal/ui/assets/edit/index.html \
 	internal/ui/assets/index.html
 
-.PHONY: all clean develop
+.PHONY: all clean develop publish
 
 all: bin/go
 
@@ -44,5 +42,4 @@ publish: bin/publish
 		--tag=$(shell git rev-parse --short $(SHA)) \
 		--platform=linux/arm64 \
 		--platform=linux/amd64 \
-		--build-arg=SHA=${SHA} \
 		--image=kellegous/go
