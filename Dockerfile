@@ -1,4 +1,4 @@
-FROM kellegous/build:f1799259 AS build
+FROM kellegous/build:751a8adc AS build
 
 COPY . /src
 RUN cd /src && CGO_ENABLED=0 make clean all
