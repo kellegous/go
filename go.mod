@@ -1,6 +1,6 @@
 module github.com/kellegous/go
 
-go 1.25.3
+go 1.25.4
 
 require (
 	cloud.google.com/go/firestore v1.20.0
@@ -8,9 +8,9 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	github.com/syndtr/goleveldb v1.0.0
-	golang.org/x/oauth2 v0.32.0
-	golang.org/x/sync v0.17.0
-	google.golang.org/api v0.254.0
+	golang.org/x/oauth2 v0.33.0
+	golang.org/x/sync v0.18.0
+	google.golang.org/api v0.256.0
 	google.golang.org/grpc v1.76.0
 )
 
@@ -27,7 +27,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
 	github.com/googleapis/gax-go/v2 v2.15.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -51,6 +51,6 @@ require (
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250818200422-3122310a409c // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251022142026-3a174f9686a8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251103181224-f26f9409b101 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
 )
