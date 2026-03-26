@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"github.com/kellegous/glue/devmode"
 	"github.com/kellegous/go/internal/backend"
 	"github.com/kellegous/go/internal/backend/firestore"
 	"github.com/kellegous/go/internal/backend/leveldb"
@@ -19,17 +20,12 @@ import (
 	"github.com/kellegous/go/internal/web"
 )
 
-func getAssets(proxyURL *url.URL) (http.Handler, error) {
-	if proxyURL == nil {
+func getAssets(ctx context.Context, devMode *devmode.Flag) (http.Handler, error) {
+	if !devMode.IsEnabled() {
 		return ui.Assets()
 	}
-	p := httputil.NewSingleHostReverseProxy(proxyURL)
-	dir := p.Director
-	p.Director = func(r *http.Request) {
-		dir(r)
-		r.Host = proxyURL.Host
-	}
-	return p, nil
+
+	return devmode.AssetsFromVite(ctx, devMode)
 }
 
 func getBackend() (backend.Backend, error) {
@@ -43,29 +39,8 @@ func getBackend() (backend.Backend, error) {
 	}
 }
 
-type URL struct {
-	*url.URL
-}
-
-func (u *URL) Set(v string) error {
-	var err error
-	u.URL, err = url.Parse(v)
-	return err
-}
-
-func (u *URL) Type() string {
-	return "url"
-}
-
-func (u *URL) String() string {
-	if u.URL == nil {
-		return ""
-	}
-	return u.URL.String()
-}
-
 func main() {
-	var assetProxyURL URL
+	var devMode devmode.Flag
 	pflag.String("addr", ":8067", "default bind address")
 	pflag.Bool("admin", false, "allow admin-level requests")
 	pflag.String("version", "", "version string")
@@ -74,10 +49,12 @@ func main() {
 	pflag.String("project", "", "The GCP project to use for the firestore backend. Will attempt to use application default creds if not defined.")
 	pflag.String("host", "", "The host field to use when gnerating the source URL of a link. Defaults to the Host header of the generate request")
 	pflag.Var(
-		&assetProxyURL,
-		"asset-proxy-url",
-		"The URL to use for proxying asset requests")
+		&devMode,
+		"dev-mode",
+		"Enable dev mode")
 	pflag.Parse()
+
+	ctx := context.Background()
 
 	if err := viper.BindPFlags(pflag.CommandLine); err != nil {
 		log.Panic(err)
@@ -93,9 +70,16 @@ func main() {
 	}
 	defer backend.Close()
 
-	assets, err := getAssets(assetProxyURL.URL)
+	assets, err := getAssets(ctx, &devMode)
 	if err != nil {
 		log.Panic(err)
+	}
+
+	if devMode.IsEnabled() {
+		go func() {
+			time.Sleep(1 * time.Second)
+			devMode.PrintBanner(os.Stdout, viper.GetString("addr"))
+		}()
 	}
 
 	log.Panic(web.ListenAndServe(backend, assets))

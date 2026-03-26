@@ -11,9 +11,6 @@ all: bin/go
 bin/go: cmd/go/main.go $(ASSETS) $(shell find internal -name '*.go')
 	go build -o $@ ./cmd/go
 
-bin/devserver: cmd/devserver/main.go $(ASSETS)
-	go build -o $@ ./cmd/devserver
-
 node_modules/.build: package.json
 	npm install
 	touch $@
@@ -24,8 +21,8 @@ internal/ui/assets/edit/index.html: node_modules/.build $(shell find ui -type f)
 internal/ui/assets/index.html: node_modules/.build $(shell find ui -type f)
 	npm run build
 
-develop: bin/devserver bin/go
-	bin/devserver
+develop: bin/go
+	bin/go --addr=:4025 --dev-mode=.:4026
 
 clean:
 	rm -rf bin internal/ui/assets

@@ -5,6 +5,7 @@ go 1.26.1
 require (
 	cloud.google.com/go/firestore v1.21.0
 	github.com/fatih/color v1.19.0
+	github.com/kellegous/glue v0.13.0
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	github.com/syndtr/goleveldb v1.0.0
