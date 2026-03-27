@@ -1,4 +1,4 @@
-SHA := $(shell git rev-parse HEAD)
+SHA = $(shell git rev-parse HEAD)
 
 ASSETS := \
 	internal/ui/assets/edit/index.html \
@@ -26,9 +26,6 @@ develop: bin/go
 
 clean:
 	rm -rf bin internal/ui/assets
-
-bin/buildimg:
-	GOBIN="$(CURDIR)/bin" go install github.com/kellegous/buildimg@latest
 
 bin/publish: cmd/publish/main.go
 	go build -o $@ ./cmd/publish
