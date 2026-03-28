@@ -55,8 +55,10 @@ github.com/googleapis/gax-go/v2 v2.18.0 h1:jxP5Uuo3bxm3M6gGtV94P4lliVetoCB4Wk2x8
 github.com/googleapis/gax-go/v2 v2.18.0/go.mod h1:uSzZN4a356eRG985CzJ3WfbFSpqkLTjsnhWGJR6EwrE=
 github.com/hpcloud/tail v1.0.0 h1:nfCOvKYfkgYP8hkirhJocXT2+zOD8yUNjXaWfTlyFKI=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
-github.com/kellegous/glue v0.13.0 h1:MulMHiTEA53spBh1pO3pGOCgLEoNksmbxOPA3n0xWcM=
-github.com/kellegous/glue v0.13.0/go.mod h1:OiG4KGGxnRhRLaBQh1IM+oj8wLdrJoWewSjLR7wNACw=
+github.com/kellegous/buildname v0.2.0 h1:vQO62l+qusi3YZOsRbaLrGY7cfV9DQCFOqf1XqnlnyM=
+github.com/kellegous/buildname v0.2.0/go.mod h1:jJQW87nd//T+AcadeUOzD3YWEtU1z0dOkkdatYtnQZA=
+github.com/kellegous/glue v0.17.0 h1:dDRj84IIfx7rpV1CaEXE81BVmjSauxdOxLqJGGJH9sE=
+github.com/kellegous/glue v0.17.0/go.mod h1:OiG4KGGxnRhRLaBQh1IM+oj8wLdrJoWewSjLR7wNACw=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
