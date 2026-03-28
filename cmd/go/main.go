@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -75,7 +76,13 @@ func main() {
 	}
 
 	go func() {
-		if err := devMode.ShowBannerWhenReady(ctx, os.Stdout, viper.GetString("addr")); err != nil {
+		ctx, done := context.WithTimeout(ctx, 30*time.Second)
+		defer done()
+		if err := devMode.ShowBannerWhenReady(
+			ctx,
+			os.Stdout,
+			viper.GetString("addr"),
+		); err != nil {
 			log.Panic(err)
 		}
 	}()
