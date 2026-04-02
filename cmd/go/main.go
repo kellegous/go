@@ -43,6 +43,7 @@ func main() {
 	var devMode devmode.Flag
 	pflag.String("addr", ":8067", "default bind address")
 	pflag.Bool("admin", false, "allow admin-level requests")
+	pflag.Bool("metrics", false, "enable prometheus metrics")
 	pflag.String("version", "", "version string")
 	pflag.String("backend", "leveldb", "backing store to use. 'leveldb' and 'firestore' currently supported.")
 	pflag.String("data", "data", "The location of the leveldb data directory")

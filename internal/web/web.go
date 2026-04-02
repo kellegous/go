@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kellegous/glue/metrics"
 	"github.com/spf13/viper"
 
 	"github.com/kellegous/go/internal"
@@ -46,7 +47,6 @@ func getDefault(
 	http.Redirect(w, r,
 		rt.URL,
 		http.StatusTemporaryRedirect)
-
 }
 
 // ListenAndServe sets up all web routes, binds the port and handles incoming
@@ -59,6 +59,7 @@ func ListenAndServe(
 	admin := viper.GetBool("admin")
 	version := viper.GetString("version")
 	host := viper.GetString("host")
+	enableMetrics := viper.GetBool("metrics")
 
 	mux := http.NewServeMux()
 
@@ -112,5 +113,10 @@ func ListenAndServe(
 		mux.Handle("/admin/", &adminHandler{backend})
 	}
 
-	return http.ListenAndServe(addr, mux)
+	var hdr http.Handler = mux
+	if enableMetrics {
+		hdr = metrics.ForHTTP(mux)
+	}
+
+	return http.ListenAndServe(addr, hdr)
 }

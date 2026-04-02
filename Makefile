@@ -22,7 +22,7 @@ internal/ui/assets/index.html: node_modules/.build $(shell find ui -type f)
 	npm run build
 
 develop: bin/go
-	bin/go --addr=:4025 --dev-mode=.:4026
+	bin/go --addr=:4025 --metrics=true --dev-mode=.:4026
 
 clean:
 	rm -rf bin internal/ui/assets
