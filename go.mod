@@ -4,12 +4,12 @@ go 1.26.1
 
 require (
 	cloud.google.com/go/firestore v1.21.0
-	github.com/kellegous/glue v0.21.0
+	github.com/kellegous/glue v0.23.0
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	github.com/syndtr/goleveldb v1.0.0
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/api v0.273.1
+	google.golang.org/api v0.274.0
 	google.golang.org/grpc v1.80.0
 )
 
