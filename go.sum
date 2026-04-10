@@ -63,6 +63,8 @@ github.com/kellegous/buildname v0.2.0 h1:vQO62l+qusi3YZOsRbaLrGY7cfV9DQCFOqf1Xqn
 github.com/kellegous/buildname v0.2.0/go.mod h1:jJQW87nd//T+AcadeUOzD3YWEtU1z0dOkkdatYtnQZA=
 github.com/kellegous/glue v0.23.0 h1:QUuEYu5mgy4ZmammdwooJWN9CZeU4O2TDbTMwZ4FcIE=
 github.com/kellegous/glue v0.23.0/go.mod h1:gknkp5T+2Nu7KPYGI9Uo0/mySdemhLW2Q2CSN9kWaEM=
+github.com/kellegous/glue v0.24.0 h1:G+AykOTQzVd1IZxFy8MlCUpuUnTbcUel5XU3Us98jxg=
+github.com/kellegous/glue v0.24.0/go.mod h1:gknkp5T+2Nu7KPYGI9Uo0/mySdemhLW2Q2CSN9kWaEM=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
