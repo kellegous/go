@@ -4,7 +4,7 @@ ASSETS := \
 	internal/ui/assets/edit/index.html \
 	internal/ui/assets/index.html
 
-.PHONY: all clean develop publish
+.PHONY: all clean develop nuke publish
 
 all: bin/go
 
@@ -26,6 +26,9 @@ develop: bin/go
 
 clean:
 	rm -rf bin internal/ui/assets
+
+nuke: clean
+	rm -rf node_modules
 
 bin/publish: cmd/publish/main.go
 	go build -o $@ ./cmd/publish
