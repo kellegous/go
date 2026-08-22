@@ -1,7 +1,7 @@
-PROTOC_GEN_GO_VERSION := v1.36.5
-PROTOC_GEN_CONNECT_GO_VERSION := v1.19.1
-PROTOC_VERSION := 34.1
-GOLANGCI_LINT_VERSION := v2.11.4
+PROTOC_GEN_GO_VERSION := v1.36.12
+PROTOC_GEN_CONNECT_GO_VERSION := v1.20.0
+PROTOC_VERSION := 35.1
+GOLANGCI_LINT_VERSION := v2.13.1
 
 SHA := $(shell go run github.com/kellegous/glue/build/info --format="{{.SHA}}")
 BUILD_NAME := $(shell go run github.com/kellegous/glue/build/info --format="{{.Name}}")

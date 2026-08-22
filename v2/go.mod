@@ -4,6 +4,7 @@ go 1.26.7
 
 require (
 	cloud.google.com/go/firestore v1.25.0
+	connectrpc.com/connect v1.19.1
 	github.com/kellegous/glue v0.31.0
 	github.com/kellegous/poop v0.8.0
 	github.com/spf13/cobra v1.10.2
@@ -13,6 +14,7 @@ require (
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.293.0
 	google.golang.org/grpc v1.83.1
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -21,7 +23,6 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
 	cloud.google.com/go/longrunning v1.2.0 // indirect
-	connectrpc.com/connect v1.19.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
@@ -67,5 +68,4 @@ require (
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260630182238-925bb5da69e7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260807164820-c8921c73eeea // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )
