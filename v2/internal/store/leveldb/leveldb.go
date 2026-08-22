@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/kellegous/golinks"
+	"github.com/kellegous/golinks/internal/config"
 	"github.com/kellegous/golinks/internal/store"
 	"github.com/kellegous/poop"
 )
@@ -19,11 +20,29 @@ type Store struct {
 }
 
 func Open(path string) (store.Store, error) {
+	if path == "" {
+		return nil, poop.New("path is required")
+	}
+
 	db, err := leveldb.OpenFile(path, nil)
 	if err != nil {
 		return nil, err
 	}
 	return &Store{db: db}, nil
+}
+
+func FromOptions(options iter.Seq2[*config.Option, error]) (store.Store, error) {
+	var path string
+	for option, err := range options {
+		if err != nil {
+			return nil, poop.Chain(err)
+		}
+		switch option.Key {
+		case "path":
+			path = option.Val
+		}
+	}
+	return Open(path)
 }
 
 func (s *Store) Close() error {
