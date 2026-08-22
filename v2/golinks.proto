@@ -13,11 +13,11 @@ service GoLinks {
 message PutLinkReq { Link link = 1; }
 message PutLinkRes { Link link = 1; }
 
-message GetLinkReq { string name = 1; }
+message GetLinkReq { string prefix = 1; }
 message GetLinkRes { Link link = 1; }
 
 message Link {
-  string name = 1;
+  string prefix = 1;
   repeated Match matches = 2;
   google.protobuf.Timestamp created_at = 3;
 }
