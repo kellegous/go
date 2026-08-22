@@ -61,7 +61,7 @@ func (s *Store) Put(ctx context.Context, link *golinks.Link) error {
 	return s.db.Put([]byte(prefix), val, nil)
 }
 
-func (s *Store) Del(ctx context.Context, prefix string) error {
+func (s *Store) Delete(ctx context.Context, prefix string) error {
 	tx, err := s.db.OpenTransaction()
 	if err != nil {
 		return poop.Chain(err)

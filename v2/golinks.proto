@@ -6,15 +6,19 @@ option go_package = "github.com/kellegous/golinks";
 import "google/protobuf/timestamp.proto";
 
 service GoLinks {
-  rpc PutLink(PutLinkReq) returns (PutLinkRes);
-  rpc GetLink(GetLinkReq) returns (GetLinkRes);
+  rpc Put(PutReq) returns (PutRes);
+  rpc Get(GetReq) returns (GetRes);
+  rpc Delete(DeleteReq) returns (DeleteRes);
 }
 
-message PutLinkReq { Link link = 1; }
-message PutLinkRes { Link link = 1; }
+message PutReq { Link link = 1; }
+message PutRes { Link link = 1; }
 
-message GetLinkReq { string prefix = 1; }
-message GetLinkRes { Link link = 1; }
+message GetReq { string prefix = 1; }
+message GetRes { Link link = 1; }
+
+message DeleteReq { string prefix = 1; }
+message DeleteRes { Link link = 1; }
 
 message Link {
   string prefix = 1;

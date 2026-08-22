@@ -14,6 +14,6 @@ type Store interface {
 	Close() error
 	Get(ctx context.Context, prefix string) (*golinks.Link, error)
 	Put(ctx context.Context, link *golinks.Link) error
-	Del(ctx context.Context, prefix string) error
+	Delete(ctx context.Context, prefix string) error
 	List(ctx context.Context, start string) iter.Seq2[*golinks.Link, error]
 }

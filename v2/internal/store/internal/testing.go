@@ -320,7 +320,7 @@ func testDelete(t *testing.T, ta TestAdapter) {
 	links := []*golinks.Link{a, b, c}
 
 	for i, r := range links {
-		if err := s.Del(ctx, r.Prefix); !errors.Is(err, store.ErrLinkNotfound) {
+		if err := s.Delete(ctx, r.Prefix); !errors.Is(err, store.ErrLinkNotfound) {
 			t.Fatalf("(%d) expected %v, got %v",
 				i,
 				store.ErrLinkNotfound,
@@ -335,7 +335,7 @@ func testDelete(t *testing.T, ta TestAdapter) {
 	}
 
 	for _, r := range links {
-		if err := s.Del(ctx, r.Prefix); err != nil {
+		if err := s.Delete(ctx, r.Prefix); err != nil {
 			t.Fatal(err)
 		}
 	}
