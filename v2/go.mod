@@ -1,4 +1,4 @@
-module github.com/kellegous/go
+module github.com/kellegous/golinks
 
 go 1.26.7
 

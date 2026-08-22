@@ -3,3 +3,5 @@
 /bin
 /data
 .DS_Store
+*.pb.go
+/golinks_connect/

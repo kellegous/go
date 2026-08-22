@@ -3,7 +3,7 @@ package backend
 import (
 	"context"
 
-	"github.com/kellegous/go/internal"
+	"github.com/kellegous/golinks/internal"
 )
 
 type Backend interface {

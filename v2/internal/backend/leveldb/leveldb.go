@@ -13,8 +13,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 
-	"github.com/kellegous/go/internal"
-	"github.com/kellegous/go/internal/backend"
+	"github.com/kellegous/golinks/internal"
+	"github.com/kellegous/golinks/internal/backend"
 )
 
 const (

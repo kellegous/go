@@ -11,8 +11,8 @@ import (
 	"github.com/kellegous/glue/metrics"
 	"github.com/spf13/viper"
 
-	"github.com/kellegous/go/internal"
-	"github.com/kellegous/go/internal/backend"
+	"github.com/kellegous/golinks/internal"
+	"github.com/kellegous/golinks/internal/backend"
 )
 
 // The default handler responds to most requests. It is responsible for the

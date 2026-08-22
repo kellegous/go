@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kellegous/go/internal"
-	"github.com/kellegous/go/internal/backend"
+	"github.com/kellegous/golinks/internal"
+	"github.com/kellegous/golinks/internal/backend"
 )
 
 const (

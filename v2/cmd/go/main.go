@@ -13,11 +13,11 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/kellegous/glue/devmode"
-	"github.com/kellegous/go/internal/backend"
-	"github.com/kellegous/go/internal/backend/firestore"
-	"github.com/kellegous/go/internal/backend/leveldb"
-	"github.com/kellegous/go/internal/ui"
-	"github.com/kellegous/go/internal/web"
+	"github.com/kellegous/golinks/internal/backend"
+	"github.com/kellegous/golinks/internal/backend/firestore"
+	"github.com/kellegous/golinks/internal/backend/leveldb"
+	"github.com/kellegous/golinks/internal/ui"
+	"github.com/kellegous/golinks/internal/web"
 )
 
 func getAssets(ctx context.Context, devMode *devmode.Flag) (http.Handler, error) {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kellegous/go/internal"
+	"github.com/kellegous/golinks/internal"
 )
 
 // Used as an API response, this is a route with its associated shortcut name.

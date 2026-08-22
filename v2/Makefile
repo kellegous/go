@@ -9,20 +9,20 @@ BUILD_NAME := $(shell go run github.com/kellegous/glue/build/info --format="{{.N
 GO_MOD := $(shell go list -m)
 
 BE_PROTOS := \
-	go.pb.go \
-	go_connect/go.connect.go
+	golinks.pb.go \
+	golinks_connect/golinks.connect.go
 
 ASSETS := \
 	internal/ui/assets/edit/index.html \
 	internal/ui/assets/index.html
 
-.PHONY: all clean develop nuke publish
+.PHONY: all clean develop nuke publish test lint
 
 .PRECIOUS: $(BE_PROTOS)
 
 all: bin/go bin/golinks
 
-bin/%: cmd/%/main.go $(ASSETS) $(shell find internal -name '*.go')
+bin/%: cmd/%/main.go $(BE_PROTOS) $(ASSETS) $(shell find internal -name '*.go')
 	go build -o $@ ./cmd/$*
 
 node_modules/.build: package.json
@@ -44,6 +44,12 @@ clean:
 nuke: clean
 	rm -rf node_modules
 
+test:
+	go test ./internal/...
+
+lint: bin/golangci-lint
+	bin/golangci-lint run
+
 bin/publish: cmd/publish/main.go
 	go build -o $@ ./cmd/publish
 
@@ -62,7 +68,7 @@ publish: bin/publish
 		--go_opt=module=$(GO_MOD) \
 		$<
 
-go_connect/go.connect.go: go.proto bin/protoc-gen-connect-go bin/protoc
+golinks_connect/golinks.connect.go: golinks.proto bin/protoc-gen-connect-go bin/protoc
 	bin/protoc --proto_path=. \
 		--plugin=protoc-gen-connect-go=bin/protoc-gen-connect-go \
 		--connect-go_out=. \

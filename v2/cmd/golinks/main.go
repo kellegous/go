@@ -1,6 +1,6 @@
 package main
 
-import "github.com/kellegous/go/internal/cmd"
+import "github.com/kellegous/golinks/internal/cmd"
 
 func main() {
 	cmd.Execute()
