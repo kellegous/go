@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"io/ioutil"
 	"time"
 )
 
@@ -47,7 +46,7 @@ func (o *Route) Read(r io.Reader) error {
 		return err
 	}
 
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}

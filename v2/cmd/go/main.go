@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/kellegous/glue/devmode"
+	"github.com/kellegous/glue/fn"
 	"github.com/kellegous/golinks/internal/backend"
 	"github.com/kellegous/golinks/internal/backend/firestore"
 	"github.com/kellegous/golinks/internal/backend/leveldb"
@@ -69,7 +70,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	defer backend.Close()
+	defer fn.WithAbandon(backend.Close)
 
 	assets, err := getAssets(ctx, &devMode)
 	if err != nil {

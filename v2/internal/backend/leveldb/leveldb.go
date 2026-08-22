@@ -13,8 +13,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/util"
 
+	"github.com/kellegous/glue/fn"
 	"github.com/kellegous/golinks/internal"
 	"github.com/kellegous/golinks/internal/backend"
+	"github.com/kellegous/poop"
 )
 
 const (
@@ -34,35 +36,35 @@ type Backend struct {
 }
 
 // Commit the given ID to the data store.
-func commit(filename string, id uint64) error {
+func commit(filename string, id uint64) (err error) {
 	w, err := os.Create(filename)
 	if err != nil {
-		return err
+		return poop.Chain(err)
 	}
-	defer w.Close()
+	defer fn.WithCare(w.Close, &err)
 
 	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
-		return err
+		return poop.Chain(err)
 	}
 
-	return w.Sync()
+	return poop.Chain(w.Sync())
 }
 
 // Load the current ID from the data store.
-func load(filename string) (uint64, error) {
+func load(filename string) (_ uint64, err error) {
 	if _, err := os.Stat(filename); err != nil {
 		return 0, commit(filename, 0)
 	}
 
 	r, err := os.Open(filename)
 	if err != nil {
-		return 0, err
+		return 0, poop.Chain(err)
 	}
-	defer r.Close()
+	defer fn.WithCare(r.Close, &err)
 
 	var id uint64
 	if err := binary.Read(r, binary.LittleEndian, &id); err != nil {
-		return 0, err
+		return 0, poop.Chain(err)
 	}
 
 	return id, nil
@@ -165,20 +167,6 @@ func (backend *Backend) GetAll(ctx context.Context) (map[string]internal.Route, 
 	}
 
 	return golinks, nil
-}
-
-func (backend *Backend) commit(id uint64) error {
-	w, err := os.Create(filepath.Join(backend.path, idLogFilename))
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	if err := binary.Write(w, binary.LittleEndian, id); err != nil {
-		return err
-	}
-
-	return w.Sync()
 }
 
 // NextID generates the next numeric ID to be used for an auto-named shortcut.

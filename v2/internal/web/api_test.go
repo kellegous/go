@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,8 +30,8 @@ type env struct {
 	backend backend.Backend
 }
 
-func (e *env) destroy() {
-	os.RemoveAll(e.dir)
+func (e *env) destroy() error {
+	return os.RemoveAll(e.dir)
 }
 
 func (e *env) get(path string) (*mockResponse, error) {
@@ -73,14 +72,14 @@ func (e *env) call(method, path string, body io.Reader) (*mockResponse, error) {
 }
 
 func newEnv(host string) (*env, error) {
-	dir, err := ioutil.TempDir("", "")
+	dir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return nil, err
 	}
 
 	backend, err := leveldb.New(filepath.Join(dir, "data"))
 	if err != nil {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 		return nil, err
 	}
 
@@ -170,9 +169,15 @@ func mustHaveStatus(t *testing.T, res *mockResponse, status int) {
 	}
 }
 
+func withFatal(t *testing.T, f func() error) {
+	if err := f(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestAPIGetNotFound(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	names := map[string]int{
 		"":              http.StatusBadRequest,
@@ -199,7 +204,7 @@ func TestAPIGetNotFound(t *testing.T) {
 
 func TestAPIPutThenGet(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	res, err := e.post("/api/url/xxx", &urlReq{
 		URL: "http://ex.com/",
@@ -237,7 +242,7 @@ func TestAPIPutThenGet(t *testing.T) {
 func TestAPIPutThenGetWithHost(t *testing.T) {
 	host := "http://test.com"
 	e := needEnv(t, host)
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	res, err := e.post("/api/url/xxx", &urlReq{
 		URL: "http://ex.com/",
@@ -274,7 +279,7 @@ func TestAPIPutThenGetWithHost(t *testing.T) {
 
 func TestBadPuts(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	var m msgErr
 
@@ -314,7 +319,7 @@ func TestBadPuts(t *testing.T) {
 
 func TestAPIDel(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -349,7 +354,7 @@ func TestAPIDel(t *testing.T) {
 
 func TestAPIPutThenGetAuto(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	res, err := e.post("/api/url/", &urlReq{URL: "http://b.com/"})
 	if err != nil {
@@ -419,10 +424,10 @@ type listTest struct {
 
 func TestAPIList(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	rts := []*routeWithName{
-		&routeWithName{
+		{
 			Name: "0",
 			Route: &internal.Route{
 				URL:  "http://0.com/",
@@ -430,7 +435,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "1",
 			Route: &internal.Route{
 				URL:  "http://1.com/",
@@ -438,7 +443,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: ":a",
 			Route: &internal.Route{
 				URL:  "http://ga.com/",
@@ -446,7 +451,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: ":b",
 			Route: &internal.Route{
 				URL:  "http://gb.com/",
@@ -454,7 +459,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "a",
 			Route: &internal.Route{
 				URL:  "http://a.com/",
@@ -462,7 +467,7 @@ func TestAPIList(t *testing.T) {
 			},
 		},
 
-		&routeWithName{
+		{
 			Name: "b",
 			Route: &internal.Route{
 				URL:  "http://b.com/",
@@ -481,78 +486,78 @@ func TestAPIList(t *testing.T) {
 	}
 
 	tests := []*listTest{
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1], rts[4], rts[5]},
+				{rts[0], rts[1], rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"true"},
 			}),
 			Pages: [][]*routeWithName{rts},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"include-generated-names": {"false"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1], rts[4], rts[5]},
+				{rts[0], rts[1], rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit": {"2"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1]},
-				[]*routeWithName{rts[4], rts[5]},
+				{rts[0], rts[1]},
+				{rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit":                   {"2"},
 				"include-generated-names": {"true"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0], rts[1]},
-				[]*routeWithName{rts[2], rts[3]},
-				[]*routeWithName{rts[4], rts[5]},
+				{rts[0], rts[1]},
+				{rts[2], rts[3]},
+				{rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit":  {"2"},
 				"cursor": {base64.URLEncoding.EncodeToString([]byte{':'})},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[4], rts[5]},
+				{rts[4], rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit":                   {"3"},
 				"include-generated-names": {"true"},
 				"cursor":                  {base64.URLEncoding.EncodeToString([]byte{':'})},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[2], rts[3], rts[4]},
-				[]*routeWithName{rts[5]},
+				{rts[2], rts[3], rts[4]},
+				{rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"limit": {"1"},
 			}),
 			Pages: [][]*routeWithName{
-				[]*routeWithName{rts[0]},
-				[]*routeWithName{rts[1]},
-				[]*routeWithName{rts[4]},
-				[]*routeWithName{rts[5]},
+				{rts[0]},
+				{rts[1]},
+				{rts[4]},
+				{rts[5]},
 			},
 		},
-		&listTest{
+		{
 			Params: url.Values(map[string][]string{
 				"cursor": {base64.URLEncoding.EncodeToString([]byte{'z'})},
 			}),
@@ -588,7 +593,7 @@ func TestAPIList(t *testing.T) {
 
 func TestBadList(t *testing.T) {
 	e := needEnv(t, "")
-	defer e.destroy()
+	defer withFatal(t, e.destroy)
 
 	tests := map[string]int{
 		url.Values{

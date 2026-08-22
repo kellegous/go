@@ -94,8 +94,11 @@ func Test(t *testing.T, ta TestAdapter) {
 
 func testGetPut(t *testing.T, ta TestAdapter) {
 	s, cleanup := ta.NewStore(t)
-
-	defer cleanup()
+	defer func() {
+		if err := cleanup(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	a := &golinks.Link{
 		Prefix:    "a",
@@ -146,7 +149,11 @@ func testGetPut(t *testing.T, ta TestAdapter) {
 
 func testList(t *testing.T, ta TestAdapter) {
 	s, cleanup := ta.NewStore(t)
-	defer cleanup()
+	defer func() {
+		if err := cleanup(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	a := &golinks.Link{
 		Prefix:    "a",
@@ -269,7 +276,11 @@ func testList(t *testing.T, ta TestAdapter) {
 
 func testDelete(t *testing.T, ta TestAdapter) {
 	s, cleanup := ta.NewStore(t)
-	defer cleanup()
+	defer func() {
+		if err := cleanup(); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	a := &golinks.Link{
 		Prefix:    "a",

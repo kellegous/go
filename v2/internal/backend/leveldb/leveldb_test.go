@@ -3,27 +3,29 @@ package leveldb
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/kellegous/glue/fn"
 	"github.com/kellegous/golinks/internal"
 )
 
 func TestGetPut(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmp)
+	defer fn.WithAbandon(func() error {
+		return os.RemoveAll(tmp)
+	})
 
 	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer fn.WithAbandon(backend.Close)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -56,17 +58,19 @@ func TestGetPut(t *testing.T) {
 }
 
 func TestNextID(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmp)
+	defer fn.WithAbandon(func() error {
+		return os.RemoveAll(tmp)
+	})
 
 	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer backend.Close()
+	defer fn.WithAbandon(backend.Close)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -87,11 +91,13 @@ func TestNextID(t *testing.T) {
 }
 
 func TestEmptyList(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmp)
+	defer fn.WithAbandon(func() error {
+		return os.RemoveAll(tmp)
+	})
 
 	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {
@@ -102,6 +108,9 @@ func TestEmptyList(t *testing.T) {
 	defer cancel()
 
 	it, err := backend.List(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer it.Release()
 
 	if it.Valid() {
@@ -176,11 +185,13 @@ func mustBeIterOf(t *testing.T, iter internal.RouteIterator, names ...string) {
 }
 
 func TestList(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "")
+	tmp, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(tmp)
+	defer fn.WithAbandon(func() error {
+		return os.RemoveAll(tmp)
+	})
 
 	backend, err := New(filepath.Join(tmp, "data"))
 	if err != nil {

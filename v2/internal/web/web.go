@@ -101,11 +101,11 @@ func ListenAndServe(
 	mux.Handle("/s/", assets)
 
 	mux.HandleFunc("/version", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, version)
+		_, _ = fmt.Fprintln(w, version)
 	})
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "👍")
+		_, _ = fmt.Fprintln(w, "👍")
 	})
 
 	// TODO(knorton): Remove the admin handler.

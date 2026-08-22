@@ -107,7 +107,9 @@ func run(
 	if err != nil {
 		return err
 	}
-	defer builder.Shutdown(context.Background())
+	defer func() {
+		_ = builder.Shutdown(context.Background())
+	}()
 
 	ctx, done := signal.NotifyContext(ctx, os.Interrupt)
 	defer done()
