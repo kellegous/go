@@ -6,10 +6,10 @@ ASSETS := \
 
 .PHONY: all clean develop nuke publish
 
-all: bin/go
+all: bin/go bin/golinks
 
-bin/go: cmd/go/main.go $(ASSETS) $(shell find internal -name '*.go')
-	go build -o $@ ./cmd/go
+bin/%: cmd/%/main.go $(ASSETS) $(shell find internal -name '*.go')
+	go build -o $@ ./cmd/$*
 
 node_modules/.build: package.json
 	npm install

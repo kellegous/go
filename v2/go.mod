@@ -5,6 +5,8 @@ go 1.26.7
 require (
 	cloud.google.com/go/firestore v1.25.0
 	github.com/kellegous/glue v0.31.0
+	github.com/kellegous/poop v0.8.0
+	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	github.com/syndtr/goleveldb v1.0.0
@@ -32,8 +34,8 @@ require (
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.20 // indirect
 	github.com/googleapis/gax-go/v2 v2.23.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kellegous/buildname v0.2.0 // indirect
-	github.com/kellegous/poop v0.8.0 // indirect
 	github.com/kellegous/tdfiglet v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
