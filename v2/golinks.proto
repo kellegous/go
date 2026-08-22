@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package golinks;
+option go_package = "github.com/kellegous/golinks";
+
+import "google/protobuf/timestamp.proto";
+
+service GoLinks {
+  rpc PutLink(PutLinkReq) returns (PutLinkRes);
+  rpc GetLink(GetLinkReq) returns (GetLinkRes);
+}
+
+message PutLinkReq { Link link = 1; }
+message PutLinkRes { Link link = 1; }
+
+message GetLinkReq { string name = 1; }
+message GetLinkRes { Link link = 1; }
+
+message Link {
+  string name = 1;
+  repeated Match matches = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message Match {
+  string pattern = 1;
+  string url = 2;
+}

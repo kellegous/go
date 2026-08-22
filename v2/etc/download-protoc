@@ -1,0 +1,97 @@
+#!/bin/bash
+
+get_system() {
+    local system=$(uname -s)
+    case "$system" in
+        Linux)
+            echo "linux"
+            ;;
+        Darwin)
+            echo "osx"
+            ;;
+        *)
+            echo "Unsupported system: $system" >&2
+            exit 1
+            ;;
+    esac
+}
+
+get_arch() {
+    local machine=$(uname -m)
+    case "$machine" in
+        x86_64)
+            echo "x86_64"
+            ;;
+        aarch64|arm64)
+            echo "aarch_64"
+            ;;
+        *)
+            echo "Unsupported architecture: $machine" >&2
+            exit 1
+            ;;
+    esac
+}
+
+usage() {
+    echo "Usage: $0 version [--base-url url] [--dest directory]"
+    echo "  version: protobuf version to download"
+    echo "  --base-url: base url for downloading protobuf (default: https://github.com/protocolbuffers/protobuf/releases/download)"
+    echo "  --dest: destination directory for the downloaded protoc binary (default: bin)"
+    exit 1
+}
+
+# Default values
+BASE_URL="https://github.com/protocolbuffers/protobuf/releases/download"
+DEST="bin"
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --base-url)
+            BASE_URL="$2"
+            shift 2
+            ;;
+        --dest)
+            DEST="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            if [[ -z "$VERSION" ]]; then
+                VERSION="$1"
+                shift
+            else
+                usage
+            fi
+            ;;
+    esac
+done
+
+# Check if version is provided
+if [[ -z "$VERSION" ]]; then
+    usage
+fi
+
+SYSTEM=$(get_system)
+ARCH=$(get_arch)
+DST="protoc-${VERSION}-${SYSTEM}-${ARCH}.zip"
+URL="${BASE_URL}/v${VERSION}/${DST}"
+
+# Create destination directory if it doesn't exist
+mkdir -p "$DEST"
+
+# Download the protoc zip
+curl -L -o "${DEST}/${DST}" "$URL"
+
+# Unzip the protoc into the dest dir
+unzip "${DEST}/${DST}" -d "${DEST}/protoc-${VERSION}"
+
+# Remove existing symlink if it exists
+if [ -L "${DEST}/protoc" ]; then
+    rm "${DEST}/protoc"
+fi
+
+# Create symlink to the protoc binary
+ln -s "protoc-${VERSION}/bin/protoc" "${DEST}/protoc"
