@@ -1,0 +1,40 @@
+.linkrow {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-bottom: 1px solid var(--stroke-primary);
+
+  > .upper {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    > .time {
+      flex-grow: 1;
+      text-align: right;
+      color: var(--text-muted);
+      font-size: 80%;
+    }
+  }
+
+  > .lower {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    align-items: center;
+
+    > .url {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      flex-grow: 1;
+      color: var(--text-muted);
+    }
+
+    > .controls {
+      padding-left: 16px;
+      width: 40px;
+      text-align: right;
+    }
+  }
+}

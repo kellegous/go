@@ -1,0 +1,16 @@
+@use "./global.scss";
+
+body {
+  font-size: var(--links-text-base-size);
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+#root {
+  width: 800px;
+  margin: 50px auto;
+}

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e pipefail
+make
+MODULE=$(go list -m)
+rm -f go.mod go.sum
+go mod init $MODULE
+go mod tidy
+npm update
+make clean

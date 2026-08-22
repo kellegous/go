@@ -1,0 +1,26 @@
+:root {
+  --background: #fff;
+
+  --text-primary: #333;
+  --text-linkable: #09f;
+  --text-muted: #999;
+  --text-super-muted: #ccc;
+  --text-muted-emphasis: #666;
+
+  --stroke-primary: #cfd3d3;
+  --stroke-emphasis: #09f;
+
+  --edit-text-base-size: 42px;
+
+  --links-text-base-size: 24px;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+
+  font-family: "Josefin Sans", serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+}

@@ -1,0 +1,13 @@
+.root {
+  display: flex;
+
+  > .link {
+    flex-grow: 1;
+
+    > a {
+      color: #09f;
+      text-decoration: none;
+      flex-grow: 1;
+    }
+  }
+}
