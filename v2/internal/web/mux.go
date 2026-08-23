@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -17,21 +18,35 @@ func (m *Mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (m *Mux) Handle(pattern string, handler http.Handler) {
 	m.mux.Handle(pattern, handler)
-	m.reserved[uriToKeyword(pattern)] = true
+	if kw := uriToKeyword(pattern); kw != "" {
+		m.reserved[kw] = true
+	}
 }
 
 func (m *Mux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
 	m.mux.HandleFunc(pattern, handler)
-	m.reserved[uriToKeyword(pattern)] = true
+	if kw := uriToKeyword(pattern); kw != "" {
+		m.reserved[kw] = true
+	}
 }
 
 func (m *Mux) IsReserved(keyword string) bool {
 	return m.reserved[strings.ToLower(keyword)]
 }
 
+func (m *Mux) Reserved() []string {
+	reserved := make([]string, 0, len(m.reserved))
+	for keyword := range m.reserved {
+		reserved = append(reserved, keyword)
+	}
+	sort.Strings(reserved)
+	return reserved
+}
+
 func NewMux() *Mux {
 	return &Mux{
-		mux: http.NewServeMux(),
+		mux:      http.NewServeMux(),
+		reserved: make(map[string]bool),
 	}
 }
 
