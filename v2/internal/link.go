@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/kellegous/golinks"
@@ -17,6 +19,38 @@ type Link struct {
 type Match struct {
 	Pattern *regexp.Regexp `json:"pattern"`
 	URL     string         `json:"url"`
+}
+
+type ExpandedURL struct {
+	URL        string `json:"url"`
+	MatchIndex int    `json:"match_index"`
+}
+
+func (l *Link) Expand(uri string) *ExpandedURL {
+	if !strings.HasPrefix(uri, l.Prefix) {
+		return nil
+	}
+
+	suffix := strings.TrimLeft(uri[len(l.Prefix):], "/")
+
+	for i, match := range l.Matches {
+		if expanded, ok := match.Expand(suffix); ok {
+			return &ExpandedURL{
+				URL:        expanded,
+				MatchIndex: i,
+			}
+		}
+	}
+	return nil
+}
+
+func (m *Match) Expand(uri string) (string, bool) {
+	p := m.Pattern
+	idx := p.FindStringSubmatchIndex(uri)
+	if idx == nil {
+		return "", false
+	}
+	return string(p.ExpandString(nil, m.URL, uri, idx)), true
 }
 
 func ToLink(proto *golinks.Link) (*Link, error) {
@@ -49,8 +83,30 @@ func toMatch(proto *golinks.Match) (*Match, error) {
 		return nil, err
 	}
 
+	url := proto.GetUrl()
+	if err := validateURL(url); err != nil {
+		return nil, err
+	}
+
 	return &Match{
 		Pattern: p,
-		URL:     proto.GetUrl(),
+		URL:     url,
 	}, nil
+}
+
+func validateURL(s string) error {
+	u, err := url.Parse(s)
+	if err != nil {
+		return poop.New("invalid URL")
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return poop.New("URL must be http or https")
+	}
+
+	if strings.Contains(u.Host, "$") {
+		return poop.New("URL host cannot contain '$' replacements")
+	}
+
+	return nil
 }
