@@ -3,8 +3,9 @@ package leveldb
 import (
 	"bytes"
 
-	"github.com/kellegous/golinks/internal"
 	"github.com/syndtr/goleveldb/leveldb/iterator"
+
+	"github.com/kellegous/golinks/internal"
 )
 
 // RouteIterator allows iteration of the named routes in the store.

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/kellegous/glue/fn"
+
 	"github.com/kellegous/golinks/internal"
 )
 

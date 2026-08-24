@@ -5,11 +5,12 @@ import (
 	"time"
 
 	fs "cloud.google.com/go/firestore"
-	"github.com/kellegous/golinks/internal"
-	"github.com/kellegous/golinks/internal/backend"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/kellegous/golinks/internal"
+	"github.com/kellegous/golinks/internal/backend"
 )
 
 var _ backend.Backend = (*Backend)(nil)

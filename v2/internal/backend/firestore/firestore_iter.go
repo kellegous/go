@@ -5,8 +5,9 @@ import (
 	"errors"
 
 	fs "cloud.google.com/go/firestore"
-	"github.com/kellegous/golinks/internal"
 	"google.golang.org/api/iterator"
+
+	"github.com/kellegous/golinks/internal"
 )
 
 // RouteIterator allows iteration of the named routes in firestore.

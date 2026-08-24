@@ -2,6 +2,7 @@ PROTOC_GEN_GO_VERSION := v1.36.12
 PROTOC_GEN_CONNECT_GO_VERSION := v1.20.0
 PROTOC_VERSION := 35.1
 GOLANGCI_LINT_VERSION := v2.13.1
+GOIMPORTS_VERSION := v0.49.0
 
 SHA := $(shell go run github.com/kellegous/glue/build/info --format="{{.SHA}}")
 BUILD_NAME := $(shell go run github.com/kellegous/glue/build/info --format="{{.Name}}")
@@ -16,7 +17,7 @@ ASSETS := \
 	internal/ui/assets/edit/index.html \
 	internal/ui/assets/index.html
 
-.PHONY: all clean develop nuke publish test lint
+.PHONY: all clean develop nuke publish test lint fmt
 
 .PRECIOUS: $(BE_PROTOS)
 
@@ -49,6 +50,9 @@ test:
 
 lint: bin/golangci-lint
 	bin/golangci-lint run
+
+fmt: bin/goimports
+	bin/goimports -local $(GO_MOD) -w .
 
 bin/publish: cmd/publish/main.go
 	go build -o $@ ./cmd/publish
@@ -87,3 +91,6 @@ bin/protoc-gen-connect-go:
 
 bin/golangci-lint: Makefile
 	GOBIN=$(abspath $(dir $@)) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+
+bin/goimports:
+	GOBIN="$(CURDIR)/bin" go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)

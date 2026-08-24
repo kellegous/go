@@ -13,9 +13,10 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/kellegous/poop"
+
 	"github.com/kellegous/golinks"
 	"github.com/kellegous/golinks/internal/store"
-	"github.com/kellegous/poop"
 )
 
 var marshalOptions = protojson.MarshalOptions{

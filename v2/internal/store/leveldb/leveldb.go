@@ -9,10 +9,11 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/kellegous/poop"
+
 	"github.com/kellegous/golinks"
 	"github.com/kellegous/golinks/internal/config"
 	"github.com/kellegous/golinks/internal/store"
-	"github.com/kellegous/poop"
 )
 
 type Store struct {

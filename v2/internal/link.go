@@ -6,8 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kellegous/golinks"
 	"github.com/kellegous/poop"
+
+	"github.com/kellegous/golinks"
 )
 
 type Link struct {

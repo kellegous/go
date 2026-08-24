@@ -9,12 +9,13 @@ import (
 	"github.com/kellegous/glue/devmode"
 	"github.com/kellegous/glue/fn"
 	"github.com/kellegous/glue/logging"
-	"github.com/kellegous/golinks/internal/ui"
-	"github.com/kellegous/golinks/internal/web"
 	"github.com/kellegous/poop"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"go.uber.org/zap"
+
+	"github.com/kellegous/golinks/internal/ui"
+	"github.com/kellegous/golinks/internal/web"
 )
 
 // TODO(kellegous): This is one of many breaking changes, should I keep 8067?

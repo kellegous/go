@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kellegous/golinks"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/kellegous/golinks"
 )
 
 func TestToLink(t *testing.T) {

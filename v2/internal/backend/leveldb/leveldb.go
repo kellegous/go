@@ -14,9 +14,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/util"
 
 	"github.com/kellegous/glue/fn"
+	"github.com/kellegous/poop"
+
 	"github.com/kellegous/golinks/internal"
 	"github.com/kellegous/golinks/internal/backend"
-	"github.com/kellegous/poop"
 )
 
 const (
