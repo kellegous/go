@@ -6,3 +6,4 @@
 *.pb.go
 /golinks_connect/
 /golinks.db/
+/ui/src/gen/

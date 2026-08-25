@@ -13,28 +13,19 @@ BE_PROTOS := \
 	golinks.pb.go \
 	golinks_connect/golinks.connect.go
 
+FE_PROTOS := \
+	ui/src/gen/golinks_pb.ts
+
 ASSETS := \
 	internal/ui/assets/edit/index.html \
 	internal/ui/assets/index.html
 
 .PHONY: all clean develop nuke publish test lint fmt
 
-.PRECIOUS: $(BE_PROTOS)
+.PRECIOUS: $(BE_PROTOS) $(FE_PROTOS)
 
 all: bin/go bin/golinks
 
-bin/%: cmd/%/main.go $(BE_PROTOS) $(ASSETS) $(shell find internal -name '*.go')
-	go build -o $@ ./cmd/$*
-
-node_modules/.build: package.json
-	npm install
-	touch $@
-
-internal/ui/assets/edit/index.html: node_modules/.build $(shell find ui -type f)
-	npm run build
-
-internal/ui/assets/index.html: node_modules/.build $(shell find ui -type f)
-	npm run build
 
 develop: bin/go
 	bin/go --addr=:4025 --metrics=true --dev-mode=.:4026
@@ -65,6 +56,19 @@ publish: bin/publish
 		--platform=linux/amd64 \
 		--image=kellegous/go
 
+bin/%: cmd/%/main.go $(BE_PROTOS) $(ASSETS) $(FE_PROTOS) $(shell find internal -name '*.go')
+	go build -o $@ ./cmd/$*
+
+node_modules/.build: package.json
+	npm install
+	touch $@
+
+internal/ui/assets/edit/index.html: node_modules/.build $(shell find ui -type f)
+	SHA="$(SHA)" BUILD_NAME="$(BUILD_NAME)" npm run build
+
+internal/ui/assets/index.html: node_modules/.build $(shell find ui -type f)
+	SHA="$(SHA)" BUILD_NAME="$(BUILD_NAME)" npm run build
+
 %.pb.go: %.proto bin/protoc-gen-go bin/protoc
 	bin/protoc --proto_path=. \
 		--plugin=protoc-gen-go=bin/protoc-gen-go \
@@ -78,6 +82,14 @@ golinks_connect/golinks.connect.go: golinks.proto bin/protoc-gen-connect-go bin/
 		--connect-go_out=. \
 		--connect-go_opt=module=$(GO_MOD) \
 		--connect-go_opt=package_suffix=_connect \
+		$<
+
+ui/src/gen/%_pb.ts: %.proto node_modules/.build bin/protoc
+	mkdir -p $(dir $@)
+	bin/protoc --proto_path=. \
+		--plugin=protoc-gen-es=$(CURDIR)/node_modules/.bin/protoc-gen-es \
+		--es_out=ui/src/gen \
+		--es_opt=target=ts \
 		$<
 
 bin/protoc:

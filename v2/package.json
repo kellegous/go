@@ -14,6 +14,9 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@bufbuild/protobuf": "^2.14.0",
+    "@bufbuild/protoc-gen-es": "^2.14.0",
+    "@connectrpc/connect-web": "^2.1.2",
     "@eslint/js": "^9.19.0",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
