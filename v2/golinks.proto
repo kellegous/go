@@ -10,6 +10,7 @@ service GoLinks {
   rpc Get(GetReq) returns (GetRes);
   rpc Delete(DeleteReq) returns (DeleteRes);
   rpc Expand(ExpandReq) returns (ExpandRes);
+  rpc List(ListReq) returns (ListRes);
 }
 
 message PutReq { Link link = 1; }
@@ -20,6 +21,15 @@ message GetRes { Link link = 1; }
 
 message DeleteReq { string prefix = 1; }
 message DeleteRes { Link link = 1; }
+
+message ListReq {
+  string after = 1;
+  uint32 limit = 2;
+}
+message ListRes {
+  repeated Link links = 1;
+  string last_prefix = 2;
+}
 
 message ExpandReq {
   Link link = 1;

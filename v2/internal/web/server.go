@@ -7,6 +7,8 @@ import (
 
 	"connectrpc.com/connect"
 
+	"github.com/kellegous/poop"
+
 	"github.com/kellegous/golinks"
 	"github.com/kellegous/golinks/golinks_connect"
 	"github.com/kellegous/golinks/internal"
@@ -68,9 +70,19 @@ func WithEnableMetrics(enable bool) Option {
 	}
 }
 
-func (s *server) Put(ctx context.Context, req *connect.Request[golinks.PutReq]) (*connect.Response[golinks.PutRes], error) {
+func (s *server) Put(
+	ctx context.Context,
+	req *connect.Request[golinks.PutReq],
+) (*connect.Response[golinks.PutRes], error) {
 	link := req.Msg.GetLink()
-	// TODO(kellegous): validate link
+	if link == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("link is required"))
+	}
+
+	if _, err := internal.ToLink(link); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	if _, err := s.store.Put(ctx, link); err != nil {
 		return nil, err
 	}
@@ -78,7 +90,15 @@ func (s *server) Put(ctx context.Context, req *connect.Request[golinks.PutReq]) 
 	return connect.NewResponse(&golinks.PutRes{Link: link}), nil
 }
 
-func (s *server) Get(ctx context.Context, req *connect.Request[golinks.GetReq]) (*connect.Response[golinks.GetRes], error) {
+func (s *server) Get(
+	ctx context.Context,
+	req *connect.Request[golinks.GetReq],
+) (*connect.Response[golinks.GetRes], error) {
+	prefix := req.Msg.GetPrefix()
+	if prefix == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("prefix is required"))
+	}
+
 	link, err := s.store.Get(ctx, req.Msg.GetPrefix())
 	if errors.Is(err, store.ErrLinkNotfound) {
 		return nil, connect.NewError(connect.CodeNotFound, err)
@@ -89,7 +109,10 @@ func (s *server) Get(ctx context.Context, req *connect.Request[golinks.GetReq]) 
 	return connect.NewResponse(&golinks.GetRes{Link: link}), nil
 }
 
-func (s *server) Delete(ctx context.Context, req *connect.Request[golinks.DeleteReq]) (*connect.Response[golinks.DeleteRes], error) {
+func (s *server) Delete(
+	ctx context.Context,
+	req *connect.Request[golinks.DeleteReq],
+) (*connect.Response[golinks.DeleteRes], error) {
 	prefix := req.Msg.GetPrefix()
 
 	link, err := s.store.Delete(ctx, prefix)
@@ -102,7 +125,10 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[golinks.Delete
 	return connect.NewResponse(&golinks.DeleteRes{Link: link}), nil
 }
 
-func (s *server) Expand(ctx context.Context, req *connect.Request[golinks.ExpandReq]) (*connect.Response[golinks.ExpandRes], error) {
+func (s *server) Expand(
+	ctx context.Context,
+	req *connect.Request[golinks.ExpandReq],
+) (*connect.Response[golinks.ExpandRes], error) {
 	link := req.Msg.GetLink()
 	if link == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("link is required"))
@@ -126,4 +152,44 @@ func (s *server) Expand(ctx context.Context, req *connect.Request[golinks.Expand
 	}
 
 	return nil, connect.NewError(connect.CodeNotFound, errors.New("uri does not match"))
+}
+
+func (s *server) List(
+	ctx context.Context,
+	req *connect.Request[golinks.ListReq],
+) (*connect.Response[golinks.ListRes], error) {
+	after := req.Msg.GetAfter()
+	if after == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("after is required"))
+	}
+
+	limit := 100
+	if req.Msg.GetLimit() > 0 {
+		limit = int(req.Msg.GetLimit())
+	}
+
+	if limit > 1000 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("limit must be less than 1000"))
+	}
+
+	links := make([]*golinks.Link, 0, limit)
+	for link, err := range s.store.List(ctx, req.Msg.GetAfter()) {
+		if err != nil {
+			return nil, poop.Chain(err)
+		}
+		links = append(links, link)
+		if len(links) >= limit {
+			break
+		}
+	}
+
+	lastPrefix := ""
+	if len(links) > 0 {
+		lastPrefix = links[len(links)-1].GetPrefix()
+	}
+
+	return connect.NewResponse(&golinks.ListRes{
+		Links:      links,
+		LastPrefix: lastPrefix,
+	}), nil
 }
