@@ -44,6 +44,8 @@ func NewServer(
 		path, handler := golinks_connect.NewGoLinksHandler(s)
 		mux.Handle(rpcPrefix+path, handler)
 
+		mux.Handle("/", getDefaultHandler(store, assets))
+
 		svr := &http.Server{
 			Addr:    addr,
 			Handler: mux,
