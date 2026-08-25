@@ -123,12 +123,16 @@ func testGetPut(t *testing.T, ta TestAdapter) {
 		},
 	}
 
-	if err := s.Put(t.Context(), a); err != nil {
+	if ac, err := s.Put(t.Context(), a); err != nil {
 		t.Fatal(err)
+	} else if !proto.Equal(a, ac) {
+		t.Fatalf("expected %s, got %s", describe(t, a), describe(t, ac))
 	}
 
-	if err := s.Put(t.Context(), b); err != nil {
+	if bc, err := s.Put(t.Context(), b); err != nil {
 		t.Fatal(err)
+	} else if !proto.Equal(b, bc) {
+		t.Fatalf("expected %s, got %s", describe(t, b), describe(t, bc))
 	}
 
 	if ac, err := s.Get(t.Context(), "a"); err != nil {
@@ -206,15 +210,15 @@ func testList(t *testing.T, ta TestAdapter) {
 		}
 	}
 
-	if err := s.Put(ctx, c); err != nil {
+	if _, err := s.Put(ctx, c); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := s.Put(ctx, a); err != nil {
+	if _, err := s.Put(ctx, a); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := s.Put(ctx, b); err != nil {
+	if _, err := s.Put(ctx, b); err != nil {
 		t.Fatal(err)
 	}
 
@@ -321,7 +325,7 @@ func testDelete(t *testing.T, ta TestAdapter) {
 	links := []*golinks.Link{a, b, c}
 
 	for i, r := range links {
-		if err := s.Delete(ctx, r.Prefix); !errors.Is(err, store.ErrLinkNotfound) {
+		if deleted, err := s.Delete(ctx, r.Prefix); !errors.Is(err, store.ErrLinkNotfound) || deleted != nil {
 			t.Fatalf("(%d) expected %v, got %v",
 				i,
 				store.ErrLinkNotfound,
@@ -330,14 +334,16 @@ func testDelete(t *testing.T, ta TestAdapter) {
 	}
 
 	for _, r := range links {
-		if err := s.Put(ctx, r); err != nil {
+		if _, err := s.Put(ctx, r); err != nil {
 			t.Fatal(err)
 		}
 	}
 
 	for _, r := range links {
-		if err := s.Delete(ctx, r.Prefix); err != nil {
+		if deleted, err := s.Delete(ctx, r.Prefix); err != nil {
 			t.Fatal(err)
+		} else if !proto.Equal(r, deleted) {
+			t.Fatalf("expected %s, got %s", describe(t, r), describe(t, deleted))
 		}
 	}
 

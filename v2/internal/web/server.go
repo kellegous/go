@@ -69,7 +69,7 @@ func WithEnableMetrics(enable bool) Option {
 func (s *server) Put(ctx context.Context, req *connect.Request[golinks.PutReq]) (*connect.Response[golinks.PutRes], error) {
 	link := req.Msg.GetLink()
 	// TODO(kellegous): validate link
-	if err := s.store.Put(ctx, link); err != nil {
+	if _, err := s.store.Put(ctx, link); err != nil {
 		return nil, err
 	}
 
@@ -90,15 +90,10 @@ func (s *server) Get(ctx context.Context, req *connect.Request[golinks.GetReq]) 
 func (s *server) Delete(ctx context.Context, req *connect.Request[golinks.DeleteReq]) (*connect.Response[golinks.DeleteRes], error) {
 	prefix := req.Msg.GetPrefix()
 
-	// TODO(kellegous): This has atomicity issues and the returned link should be returned from the store.Delete() call.
-	link, err := s.store.Get(ctx, prefix)
+	link, err := s.store.Delete(ctx, prefix)
 	if errors.Is(err, store.ErrLinkNotfound) {
 		return nil, connect.NewError(connect.CodeNotFound, err)
 	} else if err != nil {
-		return nil, err
-	}
-
-	if err := s.store.Delete(ctx, prefix); err != nil {
 		return nil, err
 	}
 

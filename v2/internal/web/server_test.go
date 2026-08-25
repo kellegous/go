@@ -38,23 +38,24 @@ func (s *memoryStore) Get(_ context.Context, prefix string) (*golinks.Link, erro
 	return link, nil
 }
 
-func (s *memoryStore) Put(_ context.Context, link *golinks.Link) error {
+func (s *memoryStore) Put(_ context.Context, link *golinks.Link) (*golinks.Link, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.links[link.GetPrefix()] = link
-	return nil
+	return link, nil
 }
 
-func (s *memoryStore) Delete(_ context.Context, prefix string) error {
+func (s *memoryStore) Delete(_ context.Context, prefix string) (*golinks.Link, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.links[prefix]; !ok {
-		return store.ErrLinkNotfound
+	link, ok := s.links[prefix]
+	if !ok {
+		return nil, store.ErrLinkNotfound
 	}
 	delete(s.links, prefix)
-	return nil
+	return link, nil
 }
 
 func (s *memoryStore) List(_ context.Context, _ string) iter.Seq2[*golinks.Link, error] {
@@ -98,7 +99,7 @@ func TestServerPutAndGet(t *testing.T) {
 func TestServerDelete(t *testing.T) {
 	s := &server{store: newMemoryStore()}
 	want := &golinks.Link{Prefix: "go", Matches: []*golinks.Match{{Pattern: "", Url: "https://example.com"}}}
-	if err := s.store.Put(context.Background(), want); err != nil {
+	if _, err := s.store.Put(context.Background(), want); err != nil {
 		t.Fatal(err)
 	}
 

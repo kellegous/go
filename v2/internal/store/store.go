@@ -13,7 +13,7 @@ var ErrLinkNotfound = errors.New("link not found")
 type Store interface {
 	Close() error
 	Get(ctx context.Context, prefix string) (*golinks.Link, error)
-	Put(ctx context.Context, link *golinks.Link) error
-	Delete(ctx context.Context, prefix string) error
+	Put(ctx context.Context, link *golinks.Link) (*golinks.Link, error)
+	Delete(ctx context.Context, prefix string) (*golinks.Link, error)
 	List(ctx context.Context, start string) iter.Seq2[*golinks.Link, error]
 }
