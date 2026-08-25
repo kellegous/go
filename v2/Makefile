@@ -26,9 +26,8 @@ ASSETS := \
 
 all: bin/go bin/golinks
 
-
-develop: bin/go
-	bin/go --addr=:4025 --metrics=true --dev-mode=.:4026
+develop: bin/golinks
+	bin/golinks --addr=:4025 --metrics=true --dev-mode=.:4026
 
 clean:
 	rm -rf bin internal/ui/assets

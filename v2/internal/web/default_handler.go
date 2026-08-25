@@ -14,11 +14,12 @@ import (
 )
 
 func getDefaultHandler(
-	store store.Store,
+	s store.Store,
 	assets http.Handler,
 ) http.Handler {
 	assets = http.StripPrefix("/s", assets)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		prefix := getPrefix(r)
 		if prefix == "" {
 			// this is the / route, serve /s/index.html
@@ -28,16 +29,19 @@ func getDefaultHandler(
 
 		lg := logging.L(r.Context())
 
-		proto, err := store.Get(r.Context(), prefix)
-		if errors.Is(err, internal.ErrRouteNotFound) {
+		proto, err := s.Get(r.Context(), prefix)
+		if errors.Is(err, store.ErrLinkNotfound) {
 			http.Redirect(w, r, fmt.Sprintf("/edit/%s", prefix), http.StatusTemporaryRedirect)
+			return
 		} else if err != nil {
 			lg.Panic("failed to get link", zap.String("prefix", prefix), zap.Error(err))
+			return
 		}
 
 		link, err := internal.ToLink(proto)
 		if err != nil {
 			lg.Panic("failed to convert proto to link", zap.String("prefix", prefix), zap.Error(err))
+			return
 		}
 
 		if eu := link.Expand(r.URL.Path); eu != nil {

@@ -52,7 +52,7 @@ func (s *Store) Close() error {
 }
 
 func (s *Store) Get(ctx context.Context, prefix string) (*golinks.Link, error) {
-	return getLink(ctx, s.db, prefix)
+	return getLink(s.db, prefix)
 }
 
 type dbOrTx interface {
@@ -62,7 +62,7 @@ type dbOrTx interface {
 	Has(key []byte, opts *opt.ReadOptions) (bool, error)
 }
 
-func getLink(ctx context.Context, db dbOrTx, prefix string) (*golinks.Link, error) {
+func getLink(db dbOrTx, prefix string) (*golinks.Link, error) {
 	val, err := db.Get([]byte(prefix), nil)
 	if errors.Is(err, leveldb.ErrNotFound) {
 		return nil, poop.Chain(store.ErrLinkNotfound)
@@ -104,7 +104,7 @@ func (s *Store) Delete(ctx context.Context, prefix string) (*golinks.Link, error
 	}
 	defer tx.Discard()
 
-	link, err := getLink(ctx, tx, prefix)
+	link, err := getLink(tx, prefix)
 	if err != nil {
 		return nil, poop.Chain(err)
 	}
