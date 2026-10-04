@@ -4,7 +4,7 @@ go 1.27.1
 
 require (
 	cloud.google.com/go/firestore v1.26.0
-	github.com/kellegous/glue v0.33.0
+	github.com/kellegous/glue v0.34.0
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
 	github.com/syndtr/goleveldb v1.0.0
