@@ -7,4 +7,5 @@ rm -f go.mod go.sum
 go mod init $MODULE
 go mod tidy
 npm update
-make clean
+
+make nuke all
