@@ -63,6 +63,8 @@ github.com/kellegous/buildname v0.2.0 h1:vQO62l+qusi3YZOsRbaLrGY7cfV9DQCFOqf1Xqn
 github.com/kellegous/buildname v0.2.0/go.mod h1:jJQW87nd//T+AcadeUOzD3YWEtU1z0dOkkdatYtnQZA=
 github.com/kellegous/glue v0.34.0 h1:SSzGGaaj/ixWpc1uQAf7UZ60V3n+q7GT7ImMcQ0+t6Y=
 github.com/kellegous/glue v0.34.0/go.mod h1:yqqtqPjoHAGga5kxeh9NCboOUdf4QjNI8WDimc9MU6g=
+github.com/kellegous/glue v0.37.0 h1:/ZakJxyqeZir0uH6DUCEUx5I96+weAvH4+Y5gdzzizY=
+github.com/kellegous/glue v0.37.0/go.mod h1:yqqtqPjoHAGga5kxeh9NCboOUdf4QjNI8WDimc9MU6g=
 github.com/kellegous/poop v0.8.0 h1:Ipxk7nlTK/OAdsOnSMzjB9rW2RpfI4DOVyvjEe5JDBA=
 github.com/kellegous/poop v0.8.0/go.mod h1:MCuv2rf9Jlp7ks50DRzJh9eBSUsGkR6+LwdVL/8AA+A=
 github.com/kellegous/tdfiglet v0.3.0 h1:YixozKV9ZtmK4U46MPfveDAQ41P5gRXQAC5TpSgbZ8o=
